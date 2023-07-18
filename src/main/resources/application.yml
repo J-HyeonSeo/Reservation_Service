@@ -29,5 +29,9 @@ spring:
     host: localhost
     port: 6379
 
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
   jwt:
     secret: ENTER_YOUR_JWT_SECRET_KEY!!!

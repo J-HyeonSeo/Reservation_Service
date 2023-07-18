@@ -35,7 +35,7 @@ public class TokenProvider {
     private static final String MEMBER_ID = "memberId";
     private static final String IS_PARTNER = "partner";
     private static final String IS_ADMIN = "admin";
-    private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 30;//1초 -> 1분 -> 30분
+    private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 30 * 240;//1초 -> 1분 -> 30분
     private static final long REFRESH_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24 * 14;//1초 -> 1분 -> 1시간 -> 1일 -> 2주
 
     private final RefreshTokenRepository refreshTokenRepository;
@@ -75,12 +75,14 @@ public class TokenProvider {
     }
 
     //Refresh 토큰 생성
-    public String generateRefreshToken(Long memberId){
+    public String generateRefreshToken(Long memberId, boolean isPartner, boolean isAdmin){
         Claims claims = Jwts.claims();
         claims.put(MEMBER_ID, memberId);
 
         Date now = new Date();
         Date expiredDate = new Date(now.getTime() + REFRESH_TOKEN_EXPIRE_TIME);
+
+        //추후에 REDIS 저장 로직 구현해야함.
 
         return Jwts.builder()
                 .setClaims(claims)

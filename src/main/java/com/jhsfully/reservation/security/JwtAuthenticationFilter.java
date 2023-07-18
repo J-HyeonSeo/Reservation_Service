@@ -1,6 +1,7 @@
 package com.jhsfully.reservation.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String ACCESS_TOKEN_HEADER = "AccessToken";
@@ -48,7 +50,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }catch (Exception e){ //로그인이 필요한 경우임.
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setHeader("message", "로그인이 필요합니다.");
             return;
         }
         filterChain.doFilter(request, response);
@@ -64,9 +65,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isSkip(String requestURI){
+        log.info(requestURI);
         if(requestURI.startsWith("/auth/signin"))return true;
-        if(requestURI.startsWith("/auth/user/register"))return true;
-        if(requestURI.startsWith("/auth/partner/register"))return true;
+        if(requestURI.startsWith("/auth/user/signup"))return true;
+        if(requestURI.startsWith("/auth/partner/signup"))return true;
+
+        //for Develop
+        if(requestURI.startsWith("/h2-console"))return true;
+        if(requestURI.startsWith("/swagger"))return true;
+        if(requestURI.startsWith("/v2"))return true;
         return false;
     }
 }

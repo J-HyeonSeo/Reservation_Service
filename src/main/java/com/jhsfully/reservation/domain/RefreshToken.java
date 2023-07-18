@@ -2,9 +2,8 @@ package com.jhsfully.reservation.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
-
-import javax.persistence.Id;
 
 @Getter
 @AllArgsConstructor
