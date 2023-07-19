@@ -20,6 +20,7 @@ public class Member {
     private String username;
     private String password;
     private String name;
+    @Column(unique = true, nullable = false)
     private String phone;
     private boolean isPartner;
     private boolean isAdmin;

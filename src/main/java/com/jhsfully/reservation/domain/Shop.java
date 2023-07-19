@@ -1,5 +1,7 @@
 package com.jhsfully.reservation.domain;
 
+import com.jhsfully.reservation.model.ShopDto;
+import com.jhsfully.reservation.util.DistanceUtil;
 import lombok.*;
 
 import javax.persistence.*;
@@ -20,6 +22,7 @@ public class Shop {
     private Long id;
     @ManyToOne
     private Member member;
+    @Column(unique = true, nullable = false)
     private String name;
     private String introduce;
     private double star;
@@ -40,5 +43,22 @@ public class Shop {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isDeleted;
+
+    public static ShopDto.ShopTopResponse toTopResponse(Shop shop, double latitude, double longitude){
+
+        return ShopDto.ShopTopResponse.builder()
+                .shopId(shop.getId())
+                .name(shop.getName())
+                .introduce(shop.getIntroduce())
+                .address(shop.getAddress())
+                .distance(DistanceUtil.haversine(
+                        latitude,
+                        longitude,
+                        shop.getLatitude(),
+                        shop.getLongitude()
+                ))
+                .star(shop.getStar())
+                .build();
+    }
 
 }

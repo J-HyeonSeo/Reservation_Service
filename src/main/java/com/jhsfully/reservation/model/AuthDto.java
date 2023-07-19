@@ -16,12 +16,11 @@ public class AuthDto {
     @Builder
     public static class SignUpRequest{
 
-        @NotBlank
         @Size(min = 5, message = "아이디는 최소 5자리 부터 입력해주세요.")
         private String username;
-        @NotBlank
+        @NotBlank(message = "이름이 비어있습니다.")
         private String name;
-        @NotBlank
+        @NotBlank(message = "비밀번호가 비어있습니다.")
         private String password;
         @Pattern(regexp = "^010-[0-9]{4}-[0-9]{4}$", message = "전화번호 형식이 맞지 않습니다.")
         private String phone;
@@ -32,7 +31,9 @@ public class AuthDto {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SignInRequest{
+        @NotBlank(message = "아이디가 비어있습니다.")
         private String username;
+        @NotBlank(message = "비밀번호가 비어있습니다.")
         private String password;
     }
 
