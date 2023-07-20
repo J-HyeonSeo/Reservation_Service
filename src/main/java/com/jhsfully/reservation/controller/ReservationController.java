@@ -52,15 +52,19 @@ public class ReservationController {
     }
 
     //매장 예약 거절(파트너가 들어온 예약을 거절함)
-    @PatchMapping("/reject")
-    public ResponseEntity<?> rejectReservation(){
-        return null;
+    @PatchMapping("/reject/{reservationId}")
+    public ResponseEntity<?> rejectReservation(@PathVariable Long reservationId){
+        Long memberId = MemberUtil.getMemberId();
+        reservationService.rejectReservation(memberId, reservationId);
+        return ResponseEntity.ok().build();
     }
 
     //매장 예약 수락(파트너가 들어온 예약을 수락함)
-    @PatchMapping("/assign")
-    public ResponseEntity<?> assignReservation(){
-        return null;
+    @PatchMapping("/assign/{reservationId}")
+    public ResponseEntity<?> assignReservation(@PathVariable Long reservationId){
+        Long memberId = MemberUtil.getMemberId();
+        reservationService.assignReservation(memberId, reservationId);
+        return ResponseEntity.ok().build();
     }
 
     //키오스크를 위한, 예약 조회(연락처로 조회 10분전 ~ 예약시간 까지의 데이터만 조회가능)(파트너권한)

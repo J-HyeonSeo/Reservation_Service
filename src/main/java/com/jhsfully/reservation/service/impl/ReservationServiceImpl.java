@@ -114,6 +114,40 @@ public class ReservationServiceImpl implements ReservationService {
 
     }
 
+    //예약 거절
+    @Override
+    public void rejectReservation(Long memberId, Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        validateRejectReservation(member, reservation);
+
+        reservation.setReservationState(REJECT);
+        reservationRepository.save(reservation);
+    }
+
+
+
+    //예약 수행
+    @Override
+    public void assignReservation(Long memberId, Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        validateAssignReservation(member, reservation);
+
+        reservation.setReservationState(ASSIGN);
+        reservationRepository.save(reservation);
+    }
+
+
+
 
     //=======================   검증 로직   ====================================
 
@@ -187,5 +221,45 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         return true; //ready state
+    }
+
+    private void validateRejectReservation(Member member, Reservation reservation) {
+
+        //해당 매장의 주인이 아님.(API 조작 가능성을 염두하여 체크해야함)
+        if(reservation.getShop().getMember().getId() != member.getId()){
+            throw new ShopException(SHOP_NOT_MATCH_USER);
+        }
+
+        //READY상태가 아닌, Reservation은 거절이 불가능함.
+        if(reservation.getReservationState() != READY){
+            throw new ReservationException(RESERVATION_CANNOT_REJECT_NOT_READY);
+        }
+
+        //스케줄러에서 새벽에 처리하지만, 작업 중에 요청이 발생할 수 있으므로 확인해야함.
+        //오늘을 포함한, 이전 날짜에 대해서 처리가 불가하므로, plusDays(1)을 수행함.
+        if(reservation.getResDay().isBefore(LocalDate.now().plusDays(1))){
+            throw new ReservationException(RESERVATION_CANNOT_REJECT_NOW_EQUAL_BEFORE);
+        }
+
+    }
+
+    private void validateAssignReservation(Member member, Reservation reservation) {
+
+        //해당 매장의 주인이 아님.(API 조작 가능성을 염두하여 체크해야함)
+        if(reservation.getShop().getMember().getId() != member.getId()){
+            throw new ShopException(SHOP_NOT_MATCH_USER);
+        }
+
+        //READY상태가 아닌, Reservation은 승인이 불가능함.
+        if(reservation.getReservationState() != READY){
+            throw new ReservationException(RESERVATION_CANNOT_ASSIGN_NOT_READY);
+        }
+
+        //스케줄러에서 새벽에 처리하지만, 작업 중에 요청이 발생할 수 있으므로 확인해야함.
+        //오늘을 포함한, 이전 날짜에 대해서 처리가 불가하므로, plusDays(1)을 수행함.
+        if(reservation.getResDay().isBefore(LocalDate.now().plusDays(1))){
+            throw new ReservationException(RESERVATION_CANNOT_ASSIGN_NOW_EQUAL_BEFORE);
+        }
+
     }
 }

@@ -13,4 +13,8 @@ public interface ReservationService {
     List<ReservationDto.ReservationResponse> getReservationByShop(Long memberId, Long shopId, LocalDate startDate);
 
     void deleteReservation(Long memberId, Long reservationId);
+
+    void rejectReservation(Long memberId, Long reservationId);
+
+    void assignReservation(Long memberId, Long reservationId);
 }
