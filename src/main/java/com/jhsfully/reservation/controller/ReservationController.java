@@ -4,9 +4,11 @@ import com.jhsfully.reservation.model.ReservationDto;
 import com.jhsfully.reservation.service.ReservationService;
 import com.jhsfully.reservation.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RequestMapping("/reservation")
@@ -25,25 +27,27 @@ public class ReservationController {
     }
 
     //예약 취소
-    @DeleteMapping
-    public ResponseEntity<?> deleteReservation(){
-        return null;
+    @DeleteMapping("/{reservationId}")
+    public ResponseEntity<?> deleteReservation(@PathVariable Long reservationId){
+        Long memberId = MemberUtil.getMemberId();
+        reservationService.deleteReservation(memberId, reservationId);
+        return ResponseEntity.ok().build();
     }
 
     //유저 예약 조회(예약 승인/거절 상태 표시) -> 내용이 간단하므로 상세조회는 구현하지 않음.
     @GetMapping("/user")
-    public ResponseEntity<?> getReservationsForUser(){
+    public ResponseEntity<?> getReservationsForUser(@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
-        List<ReservationDto.ReservationResponse> responses = reservationService.getReservationForUser(memberId);
+        List<ReservationDto.ReservationResponse> responses = reservationService.getReservationForUser(memberId, startDate);
         return ResponseEntity.ok(responses);
     }
 
 
     //매장 예약 조회(파트너)
     @GetMapping("/partner/{shopId}")
-    public ResponseEntity<?> getReservationsByShop(@PathVariable Long shopId){
+    public ResponseEntity<?> getReservationsByShop(@PathVariable Long shopId, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
-        List<ReservationDto.ReservationResponse> responses = reservationService.getReservationByShop(memberId, shopId);
+        List<ReservationDto.ReservationResponse> responses = reservationService.getReservationByShop(memberId, shopId, startDate);
         return ResponseEntity.ok(responses);
     }
 

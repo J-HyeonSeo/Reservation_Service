@@ -12,7 +12,6 @@ import com.jhsfully.reservation.repository.ReservationRepository;
 import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.ReservationService;
 import com.jhsfully.reservation.type.Days;
-import com.jhsfully.reservation.type.ReservationState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +23,7 @@ import java.util.stream.Collectors;
 
 import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
 import static com.jhsfully.reservation.type.ReservationErrorType.*;
+import static com.jhsfully.reservation.type.ReservationState.*;
 import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_FOUND;
 import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_MATCH_USER;
 
@@ -57,8 +57,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .resDay(request.getResDay())
                 .resTime(request.getResTime())
                 .count(request.getCount())
-                .reservationState(ReservationState.READY)
-                .visited(false)
+                .reservationState(READY)
                 .note(request.getNote())
                 .build();
 
@@ -66,19 +65,19 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public List<ReservationDto.ReservationResponse> getReservationForUser(Long memberId) {
+    public List<ReservationDto.ReservationResponse> getReservationForUser(Long memberId, LocalDate startDate) {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
-        return reservationRepository.findByMember(member)
+        return reservationRepository.findByMemberAndResDayGreaterThanEqual(member, startDate)
                 .stream()
                 .map(Reservation::toDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<ReservationDto.ReservationResponse> getReservationByShop(Long memberId, Long shopId) {
+    public List<ReservationDto.ReservationResponse> getReservationByShop(Long memberId, Long shopId, LocalDate startDate) {
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
 
@@ -89,10 +88,30 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ShopException(SHOP_NOT_MATCH_USER);
         }
 
-        return reservationRepository.findByShop(shop)
+        return reservationRepository.findByShopAndResDayGreaterThanEqual(shop, startDate)
                 .stream()
                 .map(Reservation::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteReservation(Long memberId, Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        //검증이 필요함
+        boolean isDelete = validateDeleteReservation(reservation, member);
+
+        if(isDelete){ //데이터가 삭제되도 상관없음.
+            reservationRepository.delete(reservation);
+        }else{ //증거를 남기기 위해, 파기 처리만 수행함. 데이터를 삭제하지는 않음.
+            reservation.setReservationState(EXPIRED);
+            reservationRepository.save(reservation);
+        }
+
     }
 
 
@@ -132,6 +151,7 @@ public class ReservationServiceImpl implements ReservationService {
             }
         }
 
+        //오픈된 시간대가 아닌 경우 Exception 날리기
         if(!isGO){
             throw new ReservationException(RESERVATION_NOT_OPENED_TIME);
         }
@@ -140,9 +160,32 @@ public class ReservationServiceImpl implements ReservationService {
         int alreadyReservedCount = reservationRepository
                 .getReservationCountWithShopAndTime(shop, request.getResDay(), request.getResTime());
 
+        //기존의 예약된 횟수에서 요청된 예약을 더하면, 허용하는 시간대별 예약 수용인원을 넘긴다면, 에러 발생.
         if(alreadyReservedCount + request.getCount() > shop.getResOpenCount()){
             throw new ReservationException(RESERVATION_IS_OVERFLOW);
         }
 
+    }
+
+    private boolean validateDeleteReservation(Reservation reservation, Member member){
+
+        //해당 유저의 예약이 맞는가?
+        if(!Objects.equals(reservation.getMember().getId(), member.getId())){
+            throw new ReservationException(RESERVATION_NOT_MATCH_USER);
+        }
+
+        //파기된 상태, 방문한 상태, 거절된 상태는 증거를 남겨야 하므로 제거X
+        if(reservation.getReservationState() == EXPIRED ||
+            reservation.getReservationState() == VISITED ||
+            reservation.getReservationState() == REJECT){
+            throw new ReservationException(RESERVATION_CANNOT_DELETE);
+        }
+
+        //ASSIGN된 상태를 삭제하려고 하면, 삭제는 안되고, EXPIRED상태로 변경할거임.(예약 강제 취소 증거를 남기기위함)
+        if(reservation.getReservationState() == ASSIGN){
+            return false;
+        }
+
+        return true; //ready state
     }
 }
