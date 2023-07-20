@@ -48,7 +48,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
         //예약 가능 검증
-        validateAddReservation(request, shop);
+        validateAddReservation(request, shop, member);
 
         //예약 수행
         Reservation reservation = Reservation.builder()
@@ -164,6 +164,10 @@ public class ReservationServiceImpl implements ReservationService {
                 .findByShopAndResDayAndResTimeGreaterThanEqual(shop, LocalDate.now(), LocalTime.now())
                 .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
 
+        if(reservation.getReservationState() != ASSIGN){
+            throw new ReservationException(RESERVATION_NOT_FOUND);
+        }
+
         if(!LocalTime.now().isAfter(reservation.getResTime().minusMinutes(10))){
             throw new ReservationException(RESERVATION_NOT_FOUND);
         }
@@ -184,6 +188,10 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ShopException(SHOP_NOT_MATCH_USER);
         }
 
+        if(reservation.getReservationState() != ASSIGN){
+            throw new ReservationException(RESERVATION_CANNOT_VISIT_NOT_ASSIGN);
+        }
+
         //방문일과 예약일이 일치하지 않음.
         if(!LocalDate.now().equals(reservation.getResDay())){
             throw new ReservationException(RESERVATION_CANNOT_VISIT_DAY_NOT_EQUAL);
@@ -195,12 +203,18 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         reservation.setReservationState(VISITED);
+        reservationRepository.save(reservation);
     }
 
 
     //=======================   검증 로직   ====================================
 
-    private void validateAddReservation(ReservationDto.AddReservationRequest request, Shop shop){
+    private void validateAddReservation(ReservationDto.AddReservationRequest request, Shop shop, Member member){
+
+        //0명은 신청 불가능함
+        if(request.getCount() == 0){
+            throw new ReservationException(RESERVATION_CANNOT_ALLOW_ZERO);
+        }
 
         //예약 가능일 여부(오늘 + 1 ~ N주까지)
         // .minusDays는 isAfter함수가 자기 자신을 포함하지 않기 때문에 넣어주었음.
@@ -237,6 +251,12 @@ public class ReservationServiceImpl implements ReservationService {
         //오픈된 시간대가 아닌 경우 Exception 날리기
         if(!isGO){
             throw new ReservationException(RESERVATION_NOT_OPENED_TIME);
+        }
+
+        //같은 날에 이미 해당유저의 ASSIGN or READY 상태의 예약이 있으면 신청 못함
+        int alreadyReservedCountForMember = reservationRepository.getReservationCountWithShopAndDayForMember(shop, member, request.getResDay());
+        if(alreadyReservedCountForMember > 0){
+            throw new ReservationException(RESERVATION_CANNOT_ALLOW_GREEDY_USER);
         }
 
         //reservation 들을 가져와서 해당 예약의 카운트를 확인.

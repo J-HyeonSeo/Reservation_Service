@@ -70,7 +70,7 @@ public class ReservationController {
 
     //키오스크를 위한, 예약 조회(연락처로 조회 10분전 ~ 예약시간 까지의 데이터만 조회가능)(파트너권한)
     @GetMapping("/kiosk/{shopId}")
-    public ResponseEntity<?> getReservationForVisit(@PathVariable Long shopId, @RequestParam @Valid ReservationDto.GetReservationParam param){
+    public ResponseEntity<?> getReservationForVisit(@PathVariable Long shopId, @ModelAttribute @Valid ReservationDto.GetReservationParam param){
         Long memberId = MemberUtil.getMemberId();
         ReservationDto.ReservationResponse response = reservationService.getReservationForVisit(memberId, shopId);
         return ResponseEntity.ok(response);
