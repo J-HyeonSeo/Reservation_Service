@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RequestMapping("/reservation")
@@ -23,7 +24,7 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<?> addReservation(@RequestBody ReservationDto.AddReservationRequest request){
         Long memberId = MemberUtil.getMemberId();
-        reservationService.addReservation(memberId, request);
+        reservationService.addReservation(memberId, request, LocalDate.now());
         return null;
     }
 
@@ -56,7 +57,7 @@ public class ReservationController {
     @PatchMapping("/reject/{reservationId}")
     public ResponseEntity<?> rejectReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
-        reservationService.rejectReservation(memberId, reservationId);
+        reservationService.rejectReservation(memberId, reservationId, LocalDate.now());
         return ResponseEntity.ok().build();
     }
 
@@ -64,7 +65,7 @@ public class ReservationController {
     @PatchMapping("/assign/{reservationId}")
     public ResponseEntity<?> assignReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
-        reservationService.assignReservation(memberId, reservationId);
+        reservationService.assignReservation(memberId, reservationId, LocalDate.now());
         return ResponseEntity.ok().build();
     }
 
@@ -72,7 +73,7 @@ public class ReservationController {
     @GetMapping("/kiosk/{shopId}")
     public ResponseEntity<?> getReservationForVisit(@PathVariable Long shopId, @ModelAttribute @Valid ReservationDto.GetReservationParam param){
         Long memberId = MemberUtil.getMemberId();
-        ReservationDto.ReservationResponse response = reservationService.getReservationForVisit(memberId, shopId);
+        ReservationDto.ReservationResponse response = reservationService.getReservationForVisit(memberId, shopId, LocalDate.now(), LocalTime.now());
         return ResponseEntity.ok(response);
     }
 
@@ -80,7 +81,7 @@ public class ReservationController {
     @PatchMapping("/visit/{reservationId}")
     public ResponseEntity<?> visitShopByReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
-        reservationService.visitReservation(memberId, reservationId);
+        reservationService.visitReservation(memberId, reservationId, LocalDate.now(), LocalTime.now());
         return ResponseEntity.ok().build();
     }
 
