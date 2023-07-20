@@ -17,4 +17,8 @@ public interface ReservationService {
     void rejectReservation(Long memberId, Long reservationId);
 
     void assignReservation(Long memberId, Long reservationId);
+
+    ReservationDto.ReservationResponse getReservationForVisit(Long memberId, Long shopId);
+
+    void visitReservation(Long memberId, Long reservationId);
 }

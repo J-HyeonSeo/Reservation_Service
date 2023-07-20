@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -28,6 +29,14 @@ public class ReservationDto {
         @Min(value = 1, message = "적어도 1명 이상 예약이 필요합니다.")
         private int count;
         private String note;
+
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class GetReservationParam{
+        @Pattern(regexp = "^010-[0-9]{4}-[0-9]{4}$", message = "전화번호 형식이 맞지 않습니다.")
+        private String phone;
 
     }
 

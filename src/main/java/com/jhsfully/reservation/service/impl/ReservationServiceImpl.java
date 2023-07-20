@@ -146,7 +146,56 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
     }
 
+    //방문을 위한 예약 가져오기 로직
+    @Override
+    public ReservationDto.ReservationResponse getReservationForVisit(Long memberId, Long shopId) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
 
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        //API가 조작되었는지 검증함.
+        if(!Objects.equals(member.getId(), shop.getMember().getId())){
+            throw new ShopException(SHOP_NOT_MATCH_USER);
+        }
+
+        Reservation reservation = reservationRepository
+                .findByShopAndResDayAndResTimeGreaterThanEqual(shop, LocalDate.now(), LocalTime.now())
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
+
+        if(!LocalTime.now().isAfter(reservation.getResTime().minusMinutes(10))){
+            throw new ReservationException(RESERVATION_NOT_FOUND);
+        }
+
+        return Reservation.toDto(reservation);
+    }
+
+    //방문 수행.
+    @Override
+    public void visitReservation(Long memberId, Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        if(!Objects.equals(reservation.getShop().getMember().getId(), member.getId())){
+            throw new ShopException(SHOP_NOT_MATCH_USER);
+        }
+
+        //방문일과 예약일이 일치하지 않음.
+        if(!LocalDate.now().equals(reservation.getResDay())){
+            throw new ReservationException(RESERVATION_CANNOT_VISIT_DAY_NOT_EQUAL);
+        }
+
+        //현재 시간이 예약시간대의 이전이 아님.
+        if(!LocalTime.now().isBefore(reservation.getResTime())){
+            throw new ReservationException(RESERVATION_CANNOT_VISIT_TIME_OVER);
+        }
+
+        reservation.setReservationState(VISITED);
+    }
 
 
     //=======================   검증 로직   ====================================

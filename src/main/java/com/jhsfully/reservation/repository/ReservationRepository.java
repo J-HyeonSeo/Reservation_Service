@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -25,4 +26,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     List<Reservation> findByShopAndResDayGreaterThanEqual(Shop shop, LocalDate startDate);
 
+    Optional<Reservation> findByShopAndResDayAndResTimeGreaterThanEqual(Shop shop, LocalDate resDay, LocalTime now);
 }
