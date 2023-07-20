@@ -114,10 +114,10 @@ public class TokenProvider {
 
         List<String> roles = new ArrayList<>();
 
-        roles.add(RoleType.ROLE_USER.name());
-
         if(isPartner){
             roles.add(RoleType.ROLE_PARTNER.name());
+        }else{
+            roles.add(RoleType.ROLE_USER.name());
         }
 
         if(isAdmin){

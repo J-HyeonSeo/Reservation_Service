@@ -1,16 +1,14 @@
 package com.jhsfully.reservation.exception;
 
 import com.jhsfully.reservation.type.RefreshTokenErrorType;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
-public class RefreshTokenException extends RuntimeException{
-    private RefreshTokenErrorType refreshTokenErrorType;
-    private String message;
+public class RefreshTokenException extends CustomException{
+    private final RefreshTokenErrorType refreshTokenErrorType;
 
     public RefreshTokenException(RefreshTokenErrorType refreshTokenErrorType){
+        super(refreshTokenErrorType.getMessage());
         this.refreshTokenErrorType = refreshTokenErrorType;
-        this.message = refreshTokenErrorType.getMessage();
     }
 }

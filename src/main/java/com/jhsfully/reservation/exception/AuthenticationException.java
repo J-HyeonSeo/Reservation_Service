@@ -4,12 +4,11 @@ import com.jhsfully.reservation.type.AuthenticationErrorType;
 import lombok.Getter;
 
 @Getter
-public class AuthenticationException extends RuntimeException{
-    private AuthenticationErrorType authenticationErrorType;
-    private String message;
+public class AuthenticationException extends CustomException{
+    private final AuthenticationErrorType authenticationErrorType;
 
     public AuthenticationException(AuthenticationErrorType authenticationErrorType){
+        super(authenticationErrorType.getMessage());
         this.authenticationErrorType = authenticationErrorType;
-        this.message = authenticationErrorType.getMessage();
     }
 }

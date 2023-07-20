@@ -2,10 +2,9 @@ package com.jhsfully.reservation.controller;
 
 import com.jhsfully.reservation.model.ShopDto;
 import com.jhsfully.reservation.service.ShopService;
+import com.jhsfully.reservation.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -31,7 +30,7 @@ public class ShopController {
     //파트너의 매장 정보 목록 조회
     @GetMapping("/partner")
     public ResponseEntity<?> getShopsByPartner(){
-        Long memberId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Long memberId = MemberUtil.getMemberId();
         List<ShopDto.ShopTopResponse> responses = shopService.getShopsByPartner(memberId);
         return ResponseEntity.ok(responses);
     }
@@ -45,7 +44,7 @@ public class ShopController {
     //매장 상세 정보를 파트너에게 제공함.
     @GetMapping("/partner/detail/{shopId}")
     public ResponseEntity<?> getShopDetailForPartner(@PathVariable Long shopId){
-        Long memberId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Long memberId = MemberUtil.getMemberId();
         ShopDto.ShopDetailPartnerResponse response = shopService.getShopDetailForPartner(memberId, shopId);
         return ResponseEntity.ok(response);
     }
@@ -53,9 +52,7 @@ public class ShopController {
     //매장을 추가함.
     @PostMapping
     public ResponseEntity<?> addShop(@RequestBody @Valid ShopDto.AddShopRequest request){
-
-        Long memberId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
-
+        Long memberId = MemberUtil.getMemberId();
         shopService.addShop(memberId, request);
         return ResponseEntity.ok().build();
     }
@@ -63,9 +60,7 @@ public class ShopController {
     //매장 정보를 수정함.
     @PutMapping
     public ResponseEntity<?> updateShop(@RequestBody @Valid ShopDto.UpdateShopRequest request){
-
-        Long memberId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
-
+        Long memberId = MemberUtil.getMemberId();
         shopService.updateShop(memberId, request);
         return ResponseEntity.ok().build();
     }
@@ -73,7 +68,7 @@ public class ShopController {
     //매장을 삭제함.
     @DeleteMapping("/{shopId}")
     public ResponseEntity<?> deleteShop(@PathVariable Long shopId){
-        Long memberId = Long.parseLong(SecurityContextHolder.getContext().getAuthentication().getName());
+        Long memberId = MemberUtil.getMemberId();
         shopService.deleteShop(memberId, shopId);
         return ResponseEntity.ok().build();
     }

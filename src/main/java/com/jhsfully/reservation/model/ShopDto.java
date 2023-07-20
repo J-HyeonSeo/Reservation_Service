@@ -1,6 +1,6 @@
 package com.jhsfully.reservation.model;
 
-import com.jhsfully.reservation.domain.Member;
+import com.jhsfully.reservation.type.Days;
 import com.jhsfully.reservation.type.SortingType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,7 +8,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.UniqueElements;
 
-import javax.persistence.*;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -42,7 +41,7 @@ public class ShopDto {
         private int resOpenCount;
         @NotEmpty(message = "예약이 오픈된 날이 없습니다.")
         @UniqueElements(message = "중복된 날이 존재합니다.")
-        private List<Integer> resOpenDays;
+        private List<Days> resOpenDays;
         @NotEmpty(message = "예약이 오픈된 시간대가 없습니다.")
         @UniqueElements(message = "중복된 시간대가 존재합니다.")
         private List<LocalTime> resOpenTimes;
@@ -71,7 +70,7 @@ public class ShopDto {
         private int resOpenCount;
         @NotEmpty(message = "예약이 오픈된 날이 없습니다.")
         @UniqueElements(message = "중복된 날이 존재합니다.")
-        private List<Integer> resOpenDays;
+        private List<Days> resOpenDays;
         @NotEmpty(message = "예약이 오픈된 시간대가 없습니다.")
         @UniqueElements(message = "중복된 시간대가 존재합니다.")
         private List<LocalTime> resOpenTimes;
@@ -141,7 +140,7 @@ public class ShopDto {
         private String address;
         private int resOpenWeek;
         private int resOpenCount;
-        private List<Integer> resOpenDays;
+        private List<Days> resOpenDays;
         private List<LocalTime> resOpenTimes;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;

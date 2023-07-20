@@ -8,9 +8,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import javax.validation.ConstraintViolationException;
-import java.util.Objects;
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -25,8 +22,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), message));
     }
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<?> authExceptionHandler(AuthenticationException e){
+    @ExceptionHandler(CustomException.class)
+    public ResponseEntity<?> customExceptionHandler(CustomException e){
         return ResponseEntity.internalServerError().body(
                 new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage())
         );

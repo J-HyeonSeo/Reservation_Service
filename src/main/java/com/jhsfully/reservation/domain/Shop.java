@@ -1,6 +1,7 @@
 package com.jhsfully.reservation.domain;
 
 import com.jhsfully.reservation.model.ShopDto;
+import com.jhsfully.reservation.type.Days;
 import com.jhsfully.reservation.util.DistanceUtil;
 import lombok.*;
 
@@ -34,7 +35,8 @@ public class Shop {
     @ElementCollection
     @CollectionTable(name = "res_open_day", joinColumns = @JoinColumn(name = "shop_id"))
     @Column(name = "open_day")
-    private List<Integer> resOpenDays;
+    @Enumerated(EnumType.STRING)
+    private List<Days> resOpenDays;
     @ElementCollection
     @CollectionTable(name = "res_open_time", joinColumns = @JoinColumn(name = "shop_id"))
     @Column(name = "open_time")
