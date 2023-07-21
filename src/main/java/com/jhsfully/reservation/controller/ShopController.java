@@ -1,6 +1,7 @@
 package com.jhsfully.reservation.controller;
 
 import com.jhsfully.reservation.model.ShopDto;
+import com.jhsfully.reservation.model.ShopTopResponseInterface;
 import com.jhsfully.reservation.service.ShopService;
 import com.jhsfully.reservation.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -23,22 +25,23 @@ public class ShopController {
         if(param.getSearchValue() == null){
             param.setSearchValue("");
         }
-        List<ShopDto.ShopTopResponse> responses = shopService.searchShops(param);
+        List<ShopTopResponseInterface> responses = shopService.searchShops(param);
         return ResponseEntity.ok(responses);
     }
 
     //파트너의 매장 정보 목록 조회
-    @GetMapping("/partner")
-    public ResponseEntity<?> getShopsByPartner(){
+    @GetMapping("/partner/{pageIndex}")
+    public ResponseEntity<?> getShopsByPartner(@PathVariable int pageIndex){
         Long memberId = MemberUtil.getMemberId();
-        List<ShopDto.ShopTopResponse> responses = shopService.getShopsByPartner(memberId);
+        List<ShopDto.ShopTopResponse> responses = shopService.getShopsByPartner(memberId, pageIndex);
         return ResponseEntity.ok(responses);
     }
 
     //매장 상세 정보를 유저에게 제공함.(Reservation기능이 만들어져야 이어서 구현가능함)
-    @GetMapping("/user/detail")
-    public ResponseEntity<?> getShopDetailForUser(){
-        return null;
+    @GetMapping("/user/detail/{shopId}")
+    public ResponseEntity<ShopDto.ShopDetailUserResponse> getShopDetailForUser(@PathVariable Long shopId){
+        ShopDto.ShopDetailUserResponse response = shopService.getShopDetailForUser(shopId, LocalDate.now());
+        return ResponseEntity.ok(response);
     }
 
     //매장 상세 정보를 파트너에게 제공함.

@@ -5,14 +5,19 @@ import com.jhsfully.reservation.domain.Shop;
 import com.jhsfully.reservation.exception.AuthenticationException;
 import com.jhsfully.reservation.exception.ShopException;
 import com.jhsfully.reservation.model.ShopDto;
+import com.jhsfully.reservation.model.ShopTopResponseInterface;
 import com.jhsfully.reservation.repository.MemberRepository;
+import com.jhsfully.reservation.repository.ReservationRepository;
 import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.ShopService;
-import com.jhsfully.reservation.util.DistanceUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,6 +31,7 @@ public class ShopServiceImpl implements ShopService {
 
     private final ShopRepository shopRepository;
     private final MemberRepository memberRepository;
+    private final ReservationRepository reservationRepository;
 
     @Override
     public void addShop(Long memberId, ShopDto.AddShopRequest request) {
@@ -105,65 +111,65 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
-    public List<ShopDto.ShopTopResponse> searchShops(ShopDto.SearchShopParam param) {
+    public List<ShopTopResponseInterface> searchShops(ShopDto.SearchShopParam param) {
 
-        //검색어를 가지고 검색을 수행
-        List<Shop> shopList = shopRepository.findByNameStartingWith(param.getSearchValue());
+        //비효율적인 기존 방식 일단 보류
+//        List<Shop> shopList = shopRepository.findByNameStartingWith(param.getSearchValue());
+//
+//
+//        List<ShopDto.ShopTopResponse> shopTopResponses = shopList.stream()
+//                .map(x -> Shop.toTopResponse(x, param.getLatitude(), param.getLongitude()))
+//                .collect(Collectors.toList());
+//
+//        switch (param.getSortingType()){
+//            case TEXT:
+//                Collections.sort(shopTopResponses,
+//                        param.isAscending() ?
+//                            Comparator.comparing(ShopDto.ShopTopResponse::getName) :
+//                                Comparator.comparing(ShopDto.ShopTopResponse::getName, Comparator.reverseOrder())
+//                );
+//                break;
+//            case STAR:
+//                Collections.sort(shopTopResponses,
+//                        param.isAscending() ?
+//                                Comparator.comparing(ShopDto.ShopTopResponse::getStar) :
+//                                Comparator.comparing(ShopDto.ShopTopResponse::getStar, Comparator.reverseOrder())
+//                );
+//                break;
+//            case DISTANCE:
+//                Collections.sort(shopTopResponses,
+//                        param.isAscending() ?
+//                                Comparator.comparing(ShopDto.ShopTopResponse::getDistance) :
+//                                Comparator.comparing(ShopDto.ShopTopResponse::getDistance, Comparator.reverseOrder())
+//                );
+//                break;
+//        }
 
-        /*
-            거리 계산을 쿼리내에서 수행하지 않는 이유는, 쿼리문의 복잡성과 유지보수를 위함임.
-            또한, 검색 대상의 결과는 전부 해야하기에 괜찮을 거임.
-         */
-        List<ShopDto.ShopTopResponse> shopTopResponses = shopList.stream()
-                .map(x -> Shop.toTopResponse(x, param.getLatitude(), param.getLongitude()))
-                .collect(Collectors.toList());
+        List<ShopTopResponseInterface> responses = shopRepository.findByNameAndOrdering(
+                param.getSearchValue() + "%",
+                param.getLatitude(),
+                param.getLongitude(),
+                param.getSortingType().name(),
+                param.isAscending());
 
-        /*
-        정렬 또한, 유연한 정렬이 필요하기에, 쿼리가 아닌, 외부에서 수행함
-         */
-
-        switch (param.getSortingType()){
-            case TEXT:
-                Collections.sort(shopTopResponses,
-                        param.isAscending() ?
-                            Comparator.comparing(ShopDto.ShopTopResponse::getName) :
-                                Comparator.comparing(ShopDto.ShopTopResponse::getName, Comparator.reverseOrder())
-                );
-                break;
-            case STAR:
-                Collections.sort(shopTopResponses,
-                        param.isAscending() ?
-                                Comparator.comparing(ShopDto.ShopTopResponse::getStar) :
-                                Comparator.comparing(ShopDto.ShopTopResponse::getStar, Comparator.reverseOrder())
-                );
-                break;
-            case DISTANCE:
-                Collections.sort(shopTopResponses,
-                        param.isAscending() ?
-                                Comparator.comparing(ShopDto.ShopTopResponse::getDistance) :
-                                Comparator.comparing(ShopDto.ShopTopResponse::getDistance, Comparator.reverseOrder())
-                );
-                break;
-        }
-
-
-        return shopTopResponses;
+        return responses;
     }
 
     @Override
-    public List<ShopDto.ShopTopResponse> getShopsByPartner(Long memberId) {
+    public List<ShopDto.ShopTopResponse> getShopsByPartner(Long memberId, int pageIndex) {
 
         //검증
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
-        List<Shop> shopList = shopRepository.findByMember(member);
+        Page<Shop> shopList = shopRepository.findByMember(member, PageRequest.of(pageIndex, 10));
 
-        return shopList.stream()
+        return shopList.getContent().stream()
                 .map(x -> Shop.toTopResponse(x, -1, -1))
                 .collect(Collectors.toList());
     }
 
+    //파트너가 보는 매장 상세 데이터
     @Override
     public ShopDto.ShopDetailPartnerResponse getShopDetailForPartner(Long memberId, Long shopId) {
 
@@ -190,6 +196,45 @@ public class ShopServiceImpl implements ShopService {
                 .resOpenTimes(shop.getResOpenTimes())
                 .createdAt(shop.getCreatedAt())
                 .updatedAt(shop.getUpdatedAt())
+                .build();
+    }
+
+    //유저가 보는 매장 상세 데이터.
+    @Override
+    public ShopDto.ShopDetailUserResponse getShopDetailForUser(Long shopId, LocalDate dateNow) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
+
+        //예약 관련 데이터 조회
+        List<ShopDto.ReservationDateTimeSet> dateTimeSets = new ArrayList<>();
+
+        LocalDate limitResDate = dateNow.plusWeeks(shop.getResOpenWeek());
+
+        LocalDate presentDate = dateNow.plusDays(1); //오늘은 예약 가능일에 포함되지 말아야 함!
+        while(!presentDate.isAfter(limitResDate)){
+
+            ShopDto.ReservationDateTimeSet dateTimeSet = new ShopDto.ReservationDateTimeSet();
+            dateTimeSet.setDate(presentDate);
+            dateTimeSet.setReservationTimeSets(new ArrayList<>());
+
+            for(LocalTime time : shop.getResOpenTimes()){
+                int count = reservationRepository.getReservationCountWithShopAndTime(shop, presentDate, time);
+                ShopDto.ReservationTimeSet timeSet = new ShopDto.ReservationTimeSet(time, shop.getResOpenCount() - count);
+                dateTimeSet.getReservationTimeSets().add(timeSet);
+            }
+
+            dateTimeSets.add(dateTimeSet);
+            presentDate = presentDate.plusDays(1);
+        }
+
+        //최종 빌드 및 리턴
+        return ShopDto.ShopDetailUserResponse.builder()
+                .id(shop.getId())
+                .name(shop.getName())
+                .introduce(shop.getIntroduce())
+                .star(shop.getStar())
+                .address(shop.getAddress())
+                .resOpenDateTimes(dateTimeSets)
                 .build();
     }
 

@@ -73,7 +73,7 @@ public class Shop {
     public static ShopDto.ShopTopResponse toTopResponse(Shop shop, double latitude, double longitude){
 
         return ShopDto.ShopTopResponse.builder()
-                .shopId(shop.getId())
+                .id(shop.getId())
                 .name(shop.getName())
                 .introduce(shop.getIntroduce())
                 .address(shop.getAddress())

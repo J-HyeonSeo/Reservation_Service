@@ -94,7 +94,7 @@ public class ShopDto {
     @Builder
     public static class ShopTopResponse{
 
-        private Long shopId;
+        private Long id;
         private String name;
         private String introduce;
         private String address;
@@ -113,16 +113,22 @@ public class ShopDto {
         private String introduce;
         private double star;
         private String address;
-        private int resOpenWeek;
-        private int resOpenCount;
-        private List<ReservationDateTimeSet> resOpenDateTime;
+        private List<ReservationDateTimeSet> resOpenDateTimes;
 
     }
 
     @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class ReservationDateTimeSet{
         private LocalDate date;
+        List<ReservationTimeSet> reservationTimeSets;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ReservationTimeSet{
         private LocalTime time;
         private int count;
     }

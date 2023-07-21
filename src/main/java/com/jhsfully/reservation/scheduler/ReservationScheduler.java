@@ -21,6 +21,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -44,8 +47,10 @@ public class ReservationScheduler {
         int nowPage = 0;
         LocalDate now = LocalDate.now();
 
+        List<ReservationState> states = new ArrayList<>(Arrays.asList(ReservationState.ASSIGN, ReservationState.READY));
+
         while(true){
-            Page<Reservation> reservations = reservationRepository.findAll(PageRequest.of(nowPage++, 200));
+            Page<Reservation> reservations = reservationRepository.findByReservationStateIn(states, PageRequest.of(nowPage++, 200));
 
             for(Reservation reservation : reservations.getContent()){
                 if(reservation.getReservationState() == ReservationState.ASSIGN){
