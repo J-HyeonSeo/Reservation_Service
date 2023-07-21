@@ -1,10 +1,195 @@
 package com.jhsfully.reservation.service.impl;
 
+import com.jhsfully.reservation.domain.Member;
+import com.jhsfully.reservation.domain.Reservation;
+import com.jhsfully.reservation.domain.Review;
+import com.jhsfully.reservation.domain.Shop;
+import com.jhsfully.reservation.exception.AuthenticationException;
+import com.jhsfully.reservation.exception.ReservationException;
+import com.jhsfully.reservation.exception.ReviewException;
+import com.jhsfully.reservation.model.ReservationDto;
+import com.jhsfully.reservation.model.ReviewDto;
+import com.jhsfully.reservation.repository.MemberRepository;
+import com.jhsfully.reservation.repository.ReservationRepository;
+import com.jhsfully.reservation.repository.ReviewRepository;
+import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.ReviewService;
+import com.jhsfully.reservation.type.ReservationState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
+import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_NOT_FOUND;
+import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_NOT_MATCH_USER;
+import static com.jhsfully.reservation.type.ReviewErrorType.*;
 
 @Service
 @RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
+
+    private final ReviewRepository reviewRepository;
+    private final MemberRepository memberRepository;
+    private final ReservationRepository reservationRepository;
+    private final ShopRepository shopRepository;
+
+    //작성 가능한 리뷰 조회 서비스
+    @Override
+    public List<ReservationDto.ResponseForReview> getReservationsForReview(Long memberId, LocalDate dateNow) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        //해당 회원의 예약을 가져오는데, VISITED로 처리된 항목을 가져옴.
+        //아직 예약일보다 일주일 이전이면, 조회할 수 있도록 해줌.
+
+        return reservationRepository.findReservationForReview(member, dateNow.minusWeeks(1))
+                .stream()
+                .map(x -> ReservationDto.ResponseForReview.builder()
+                        .reservationId(x.getId())
+                        .shopName(x.getShop().getName())
+                        .visitDay(x.getResDay())
+                        .visitTime(x.getResTime())
+                        .build()
+                ).collect(Collectors.toList());
+
+    }
+
+    //리뷰 작성 서비스
+    @Override
+    public void writeReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reservationId, LocalDate dateNow) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
+
+        //작성 가능 검증.
+        validateWriteReview(member, reservation, dateNow);
+
+        //리뷰 작성 가능
+        Review review = Review.builder()
+                .reservation(reservation)
+                .star(request.getStar())
+                .content(request.getContent())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        //리뷰 저장 및 OneToOne 맵핑
+        reviewRepository.save(review);
+        reservation.setReview(review);
+        reservationRepository.save(reservation);
+
+        //상점에 별점을 부여해야함.
+        Shop shop = reservation.getShop();
+        shop.addStar(request.getStar());
+        shop.calculateStar();
+        shopRepository.save(shop);
+
+    }
+
+    @Override
+    public void updateReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reviewId, LocalDate dateNow) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewException(REVIEW_NOT_FOUND));
+
+        //리뷰 수정 가능 검증
+        validateUpdateReview(member, review, dateNow);
+
+        //별점 수정
+        Shop shop = review.getReservation().getShop();
+        shop.subStar(review.getStar());
+        shop.addStar(request.getStar());
+        shop.calculateStar();
+        shopRepository.save(shop);
+
+        //리뷰 수정
+        review.setContent(request.getContent());
+        review.setStar(review.getStar());
+        review.setUpdatedAt(LocalDateTime.now());
+        reviewRepository.save(review);
+
+    }
+
+    @Override
+    public void deleteReview(Long memberId, Long reviewId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewException(REVIEW_NOT_FOUND));
+
+        //해당 유저와 매칭되는 리뷰가 아닌가?
+        if(!Objects.equals(review.getReservation().getMember().getId(), member.getId())){
+            throw new ReviewException(REVIEW_NOT_MATCH_USER);
+        }
+
+        //별점 수정
+        Shop shop = review.getReservation().getShop();
+        shop.subStar(review.getStar());
+        shop.calculateStar();
+        shopRepository.save(shop);
+
+        //리뷰 삭제
+        reviewRepository.delete(review);
+    }
+
+    @Override
+    public List<ReviewDto.ReviewResponse> getReviewsForUser(Long memberId, Long pageIndex) {
+        return null;
+    }
+
+    @Override
+    public List<ReviewDto.ReviewResponse> getReviewsForShop(Long shopId, Long pageIndex) {
+        return null;
+    }
+
+
+    //======================= 검증 로직 ================================
+
+    //리뷰 작성 검증.
+    private void validateWriteReview(Member member, Reservation reservation, LocalDate dateNow) {
+
+        //해당 유저와 매칭되는 예약이 아닌가?
+        if(!Objects.equals(reservation.getMember().getId(), member.getId())){
+            throw new ReservationException(RESERVATION_NOT_MATCH_USER);
+        }
+
+        //리뷰가 방문된 상태가 아닌가?
+        if(reservation.getReservationState() != ReservationState.VISITED){
+            throw new ReviewException(REVIEW_STATE_NOT_VISITED);
+        }
+
+        //리뷰가 이미 존재하지 않은가?
+        if(reservation.getReview() != null){
+            throw new ReviewException(REVIEW_ALREADY_WRITTEN);
+        }
+
+        //현재 날짜 - 1주 > 방문일 인가? (리뷰 작성 기간 초과)
+        if(dateNow.minusWeeks(1).isAfter(reservation.getResDay())){
+            throw new ReviewException(REVIEW_TIME_OVER);
+        }
+
+    }
+
+    private void validateUpdateReview(Member member, Review review, LocalDate dateNow) {
+
+        //해당 유저와 매칭되는 리뷰가 아닌가?
+        if(!Objects.equals(review.getReservation().getMember().getId(), member.getId())){
+            throw new ReviewException(REVIEW_NOT_MATCH_USER);
+        }
+
+        if(dateNow.minusWeeks(1).isAfter(review.getReservation().getResDay())){
+            throw new ReviewException(REVIEW_TIME_OVER);
+        }
+
+    }
 }

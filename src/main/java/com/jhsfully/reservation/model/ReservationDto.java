@@ -54,4 +54,16 @@ public class ReservationDto {
         private String note;
     }
 
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class ResponseForReview{
+        private Long reservationId;
+        private String shopName;
+        private LocalDate visitDay;
+        private LocalTime visitTime;
+
+    }
+
 }

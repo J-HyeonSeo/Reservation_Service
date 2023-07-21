@@ -27,6 +27,8 @@ public class Shop {
     private String name;
     private String introduce;
     private double star;
+    private long starSum;
+    private long reviewCount;
     private String address;
     private double latitude;
     private double longitude;
@@ -45,6 +47,28 @@ public class Shop {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isDeleted;
+
+    public void subStar(long star){
+        if(star <= 0){
+            return;
+        }
+        if(this.starSum - star < 0){
+            return;
+        }
+
+        this.starSum -= star;
+        this.reviewCount -= 1;
+    }
+    public void addStar(long star){
+        if(star <= 0){
+            return;
+        }
+        this.starSum += star;
+        this.reviewCount += 1;
+    }
+    public void calculateStar(){
+        this.star = this.starSum / (double)this.reviewCount;
+    }
 
     public static ShopDto.ShopTopResponse toTopResponse(Shop shop, double latitude, double longitude){
 

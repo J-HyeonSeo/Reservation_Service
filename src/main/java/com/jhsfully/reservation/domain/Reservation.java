@@ -23,6 +23,8 @@ public class Reservation {
     private Shop shop;
     @ManyToOne
     private Member member;
+    @OneToOne
+    private Review review;
     private LocalDate resDay; //예약일
     private LocalTime resTime;//예약시간
     private int count; //방문 예약 인원

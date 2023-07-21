@@ -16,6 +16,16 @@ import java.util.Optional;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
     @Query(
+            "SELECT r FROM reservation r " +
+                    "WHERE " +
+                    "r.member = ?1 AND " +
+                    "r.reservationState = 'VISITED' AND " +
+                    "r.review = null AND " +
+                    "r.resDay >= ?2"
+    )
+    List<Reservation> findReservationForReview(Member member, LocalDate dateNow);
+
+    @Query(
             "SELECT COALESCE(SUM(r.count), 0) FROM reservation r " +
                     "WHERE r.shop = ?1 AND " +
                     "r.member = ?2 AND " +
@@ -30,7 +40,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     )
     Integer getReservationCountWithShopAndTime(Shop shop, LocalDate day, LocalTime time);
 
-//    List<Reservation> findByMember(Member member);
     List<Reservation> findByMemberAndResDayGreaterThanEqual(Member member, LocalDate startDate);
 
     List<Reservation> findByShopAndResDayGreaterThanEqual(Shop shop, LocalDate startDate);
