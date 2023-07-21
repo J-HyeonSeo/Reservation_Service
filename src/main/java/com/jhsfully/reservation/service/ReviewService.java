@@ -15,7 +15,7 @@ public interface ReviewService {
 
     void deleteReview(Long memberId, Long reviewId);
 
-    List<ReviewDto.ReviewResponse> getReviewsForUser(Long memberId, Long pageIndex);
+    List<ReviewDto.ReviewResponse> getReviewsForUser(Long memberId, int pageIndex);
 
-    List<ReviewDto.ReviewResponse> getReviewsForShop(Long shopId, Long pageIndex);
+    List<ReviewDto.ReviewResponse> getReviewsForShop(Long shopId, int pageIndex);
 }

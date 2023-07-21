@@ -7,6 +7,7 @@ import com.jhsfully.reservation.domain.Shop;
 import com.jhsfully.reservation.exception.AuthenticationException;
 import com.jhsfully.reservation.exception.ReservationException;
 import com.jhsfully.reservation.exception.ReviewException;
+import com.jhsfully.reservation.exception.ShopException;
 import com.jhsfully.reservation.model.ReservationDto;
 import com.jhsfully.reservation.model.ReviewDto;
 import com.jhsfully.reservation.repository.MemberRepository;
@@ -16,6 +17,9 @@ import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.ReviewService;
 import com.jhsfully.reservation.type.ReservationState;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -28,6 +32,7 @@ import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATI
 import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_NOT_FOUND;
 import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_NOT_MATCH_USER;
 import static com.jhsfully.reservation.type.ReviewErrorType.*;
+import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -74,6 +79,8 @@ public class ReviewServiceImpl implements ReviewService {
 
         //리뷰 작성 가능
         Review review = Review.builder()
+                .member(member)
+                .shop(reservation.getShop())
                 .reservation(reservation)
                 .star(request.getStar())
                 .content(request.getContent())
@@ -128,7 +135,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElseThrow(() -> new ReviewException(REVIEW_NOT_FOUND));
 
         //해당 유저와 매칭되는 리뷰가 아닌가?
-        if(!Objects.equals(review.getReservation().getMember().getId(), member.getId())){
+        if(!Objects.equals(review.getMember().getId(), member.getId())){
             throw new ReviewException(REVIEW_NOT_MATCH_USER);
         }
 
@@ -143,13 +150,30 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
-    public List<ReviewDto.ReviewResponse> getReviewsForUser(Long memberId, Long pageIndex) {
-        return null;
+    public List<ReviewDto.ReviewResponse> getReviewsForUser(Long memberId, int pageIndex) {
+
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        int reviewCount = reviewRepository.countByMember(member);
+        Page<Review> reviews = reviewRepository.findByMember(member, PageRequest.of(pageIndex, 10, Sort.by("id").descending()));
+        return reviews.getContent()
+                .stream()
+                .map(x -> Review.toDto(x, reviewCount))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<ReviewDto.ReviewResponse> getReviewsForShop(Long shopId, Long pageIndex) {
-        return null;
+    public List<ReviewDto.ReviewResponse> getReviewsForShop(Long shopId, int pageIndex) {
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
+
+        int reviewCount = reviewRepository.countByShop(shop);
+        Page<Review> reviews = reviewRepository.findByShop(shop, PageRequest.of(pageIndex, 10, Sort.by("id").descending()));
+        return reviews.getContent()
+                .stream()
+                .map(x -> Review.toDto(x, reviewCount))
+                .collect(Collectors.toList());
     }
 
 
@@ -183,7 +207,7 @@ public class ReviewServiceImpl implements ReviewService {
     private void validateUpdateReview(Member member, Review review, LocalDate dateNow) {
 
         //해당 유저와 매칭되는 리뷰가 아닌가?
-        if(!Objects.equals(review.getReservation().getMember().getId(), member.getId())){
+        if(!Objects.equals(review.getMember().getId(), member.getId())){
             throw new ReviewException(REVIEW_NOT_MATCH_USER);
         }
 

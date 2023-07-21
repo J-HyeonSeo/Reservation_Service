@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class ReviewController {
 
     //리뷰 작성
     @PostMapping("/{reservationId}")
-    ResponseEntity<?> writeReview(@RequestBody ReviewDto.WriteReviewRequest request,
+    ResponseEntity<?> writeReview(@RequestBody @Valid ReviewDto.WriteReviewRequest request,
                                   @PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
         reviewService.writeReview(request, memberId, reservationId, LocalDate.now());
@@ -56,7 +57,7 @@ public class ReviewController {
 
     //회원별 리뷰 조회(페이징 처리가 필요함.)
     @GetMapping("/user/{pageIndex}")
-    ResponseEntity<List<ReviewDto.ReviewResponse>> getReviewsForUser(@PathVariable Long pageIndex){
+    ResponseEntity<List<ReviewDto.ReviewResponse>> getReviewsForUser(@PathVariable int pageIndex){
         Long memberId = MemberUtil.getMemberId();
         List<ReviewDto.ReviewResponse> responses = reviewService.getReviewsForUser(memberId, pageIndex);
         return ResponseEntity.ok(responses);
@@ -65,7 +66,7 @@ public class ReviewController {
     //매장별 리뷰 조회(페이징 처리가 필요함.)
     @GetMapping("/shop/{shopId}/{pageIndex}")
     ResponseEntity<List<ReviewDto.ReviewResponse>> getReviewsForShop(@PathVariable Long shopId,
-                                                                     @PathVariable Long pageIndex){
+                                                                     @PathVariable int pageIndex){
         List<ReviewDto.ReviewResponse> responses = reviewService.getReviewsForShop(shopId, pageIndex);
         return ResponseEntity.ok(responses);
     }
