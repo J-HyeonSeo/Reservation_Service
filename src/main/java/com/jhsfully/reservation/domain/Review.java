@@ -30,7 +30,7 @@ public class Review {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static ReviewDto.ReviewResponse toDto(Review review, int reviewCount){
+    public static ReviewDto.ReviewResponse toDto(Review review, long reviewCount){
         return ReviewDto.ReviewResponse.builder()
                 .id(review.getId())
                 .reviewCount(reviewCount)

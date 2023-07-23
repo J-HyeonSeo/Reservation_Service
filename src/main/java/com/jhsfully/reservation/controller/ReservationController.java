@@ -37,19 +37,19 @@ public class ReservationController {
     }
 
     //유저 예약 조회(예약 승인/거절 상태 표시) -> 내용이 간단하므로 상세조회는 구현하지 않음.
-    @GetMapping("/user")
-    public ResponseEntity<?> getReservationsForUser(@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
+    @GetMapping("/user/{pageIndex}")
+    public ResponseEntity<?> getReservationsForUser(@PathVariable int pageIndex, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
-        List<ReservationDto.ReservationResponse> responses = reservationService.getReservationForUser(memberId, startDate);
+        List<ReservationDto.ReservationResponse> responses = reservationService.getReservationForUser(memberId, startDate, pageIndex);
         return ResponseEntity.ok(responses);
     }
 
 
     //매장 예약 조회(파트너)
-    @GetMapping("/partner/{shopId}")
-    public ResponseEntity<?> getReservationsByShop(@PathVariable Long shopId, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
+    @GetMapping("/partner/{shopId}/{pageIndex}")
+    public ResponseEntity<?> getReservationsByShop(@PathVariable Long shopId, @PathVariable int pageIndex, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
-        List<ReservationDto.ReservationResponse> responses = reservationService.getReservationByShop(memberId, shopId, startDate);
+        List<ReservationDto.ReservationResponse> responses = reservationService.getReservationByShop(memberId, shopId, startDate, pageIndex);
         return ResponseEntity.ok(responses);
     }
 

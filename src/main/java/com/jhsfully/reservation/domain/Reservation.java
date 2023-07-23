@@ -33,8 +33,9 @@ public class Reservation {
     private String note; //요청 사항 추가 기재
 
 
-    public static ReservationDto.ReservationResponse toDto(Reservation reservation){
+    public static ReservationDto.ReservationResponse toDto(Reservation reservation, long reservationCount){
         return ReservationDto.ReservationResponse.builder()
+                .reservationCount(reservationCount)
                 .id(reservation.getId())
                 .shopName(reservation.getShop().getName())
                 .resDay(reservation.getResDay())

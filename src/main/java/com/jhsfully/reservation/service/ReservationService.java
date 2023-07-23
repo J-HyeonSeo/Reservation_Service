@@ -9,9 +9,9 @@ import java.util.List;
 public interface ReservationService {
     void addReservation(Long memberId, ReservationDto.AddReservationRequest request, LocalDate dateNow);
 
-    List<ReservationDto.ReservationResponse> getReservationForUser(Long memberId, LocalDate startDate);
+    List<ReservationDto.ReservationResponse> getReservationForUser(Long memberId, LocalDate startDate, int pageIndex);
 
-    List<ReservationDto.ReservationResponse> getReservationByShop(Long memberId, Long shopId, LocalDate startDate);
+    List<ReservationDto.ReservationResponse> getReservationByShop(Long memberId, Long shopId, LocalDate startDate, int pageIndex);
 
     void deleteReservation(Long memberId, Long reservationId);
 

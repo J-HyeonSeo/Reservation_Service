@@ -10,20 +10,13 @@ ASSIGN상태가 예약시간까지, VISITED가 되지 않았다면,
 ASSIGN => EXPIRE 로 상태 변경 (노쇼이므로, 사용자에게 좋지 않음)
 */
 
-import com.jhsfully.reservation.domain.Reservation;
 import com.jhsfully.reservation.repository.ReservationRepository;
-import com.jhsfully.reservation.type.ReservationState;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -42,34 +35,37 @@ public class ReservationScheduler {
     @Transactional
     @Scheduled(cron = "5 0 0 * * *")
     public void setReservationsState(){
-        //메모리 초과의 우려가 있으므로 200개씩 페이징처리로 가져옴
 
-        int nowPage = 0;
-        LocalDate now = LocalDate.now();
+        //쿼리에게 책임 위임.
+        reservationRepository.updateReservationState(LocalDate.now(), LocalDate.now().minusDays(1));
 
-        List<ReservationState> states = new ArrayList<>(Arrays.asList(ReservationState.ASSIGN, ReservationState.READY));
-
-        while(true){
-            Page<Reservation> reservations = reservationRepository.findByReservationStateIn(states, PageRequest.of(nowPage++, 200));
-
-            for(Reservation reservation : reservations.getContent()){
-                if(reservation.getReservationState() == ReservationState.ASSIGN){
-                    if(reservation.getResDay().plusDays(1).equals(now)){
-                        reservation.setReservationState(ReservationState.REJECT);
-                    }
-                }else if(reservation.getReservationState() == ReservationState.READY){
-                    if(reservation.getResDay().equals(now)){
-                        reservation.setReservationState(ReservationState.EXPIRED);
-                    }
-                }else{
-                    continue;
-                }
-                reservationRepository.save(reservation);
-            }
-            if(!reservations.hasNext()){
-                break;
-            }
-        }
+        //기존 방식
+//        int nowPage = 0;
+//        LocalDate now = LocalDate.now();
+//
+//        List<ReservationState> states = new ArrayList<>(Arrays.asList(ReservationState.ASSIGN, ReservationState.READY));
+//
+//        while(true){
+//            Page<Reservation> reservations = reservationRepository.findByReservationStateIn(states, PageRequest.of(nowPage++, 200));
+//
+//            for(Reservation reservation : reservations.getContent()){
+//                if(reservation.getReservationState() == ReservationState.ASSIGN){
+//                    if(reservation.getResDay().plusDays(1).equals(now)){
+//                        reservation.setReservationState(ReservationState.REJECT);
+//                    }
+//                }else if(reservation.getReservationState() == ReservationState.READY){
+//                    if(reservation.getResDay().equals(now)){
+//                        reservation.setReservationState(ReservationState.EXPIRED);
+//                    }
+//                }else{
+//                    continue;
+//                }
+//                reservationRepository.save(reservation);
+//            }
+//            if(!reservations.hasNext()){
+//                break;
+//            }
+//        }
     }
 
 }

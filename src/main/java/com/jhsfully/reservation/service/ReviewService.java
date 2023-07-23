@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface ReviewService {
-    List<ReservationDto.ResponseForReview> getReservationsForReview(Long memberId, LocalDate dateNow);
+    List<ReservationDto.ResponseForReview> getReservationsForReview(Long memberId, LocalDate dateNow, int pageIndex);
 
     void writeReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reservationId, LocalDate dateNow);
 

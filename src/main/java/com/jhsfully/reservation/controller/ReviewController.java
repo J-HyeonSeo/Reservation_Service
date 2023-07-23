@@ -22,10 +22,10 @@ public class ReviewController {
     //리뷰 작성 가능 예약 조회
     //예약을 가져오는 것이라 ReservationController에 있어야 하지만, 유지보수를 위해
     //Review를 위한 Reservation을 Get하는 것은 여기서 작성하도록 함.
-    @GetMapping("/reviewable")
-    ResponseEntity<List<ReservationDto.ResponseForReview>> getReservationsForReview(){
+    @GetMapping("/reviewable/{pageIndex}")
+    ResponseEntity<List<ReservationDto.ResponseForReview>> getReservationsForReview(@PathVariable int pageIndex){
         Long memberId = MemberUtil.getMemberId();
-        List<ReservationDto.ResponseForReview> forReviews = reviewService.getReservationsForReview(memberId, LocalDate.now());
+        List<ReservationDto.ResponseForReview> forReviews = reviewService.getReservationsForReview(memberId, LocalDate.now(), pageIndex);
         return ResponseEntity.ok(forReviews);
     }
 

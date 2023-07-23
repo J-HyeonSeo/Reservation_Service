@@ -26,7 +26,7 @@ public class ReviewDto {
     @Builder
     public static class ReviewResponse{
         private Long id;
-        private int reviewCount;
+        private long reviewCount;
         private String memberName;
         private double star;
         private String content;

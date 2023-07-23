@@ -16,27 +16,29 @@ import java.util.List;
 public interface ShopRepository extends JpaRepository<Shop, Long> {
 
     /*
-        검색어를 기준으로 Like 검색을 우선적으로 수행함.
-        MySQL의 Native 쿼리인
+        유저가 검색을 하기 위한, SQL문임
+        거리 계산을 쉽게 하기 위해서, Native Query로 작성되었음.
      */
     @Query(
-            value = "SELECT id, name, introduce, address, st_distance_sphere(point(longitude, latitude), point(:longitudeOrigin, :latitudeOrigin)) as distance, star\n" +
+            value = "SELECT count(*) over () as shopCount, id, name, introduce, address, st_distance_sphere(point(longitude, latitude), point(:longitudeOrigin, :latitudeOrigin)) as distance, star\n" +
                     "FROM shop\n" +
                     "WHERE name like :searchValue \n" +
                     "ORDER BY\n" +
-                        "CASE WHEN :sortingType =  'TEXT' and :isAsc = True THEN name END asc,\n" +
-                        "CASE WHEN :sortingType =  'TEXT' and :isAsc = False THEN name END desc,\n" +
-                        "CASE WHEN :sortingType =  'STAR' and :isAsc = True THEN star END asc,\n" +
-                        "CASE WHEN :sortingType =  'STAR' and :isAsc = False THEN star END desc,\n" +
-                        "CASE WHEN :sortingType =  'DISTANCE' and :isAsc = True THEN distance END asc,\n" +
-                        "CASE WHEN :sortingType =  'DISTANCE' and :isAsc = False THEN distance END desc;", nativeQuery = true
+                        "CASE WHEN :sortingType = 'TEXT' and :isAsc = True THEN name END asc,\n" +
+                        "CASE WHEN :sortingType = 'TEXT' and :isAsc = False THEN name END desc,\n" +
+                        "CASE WHEN :sortingType = 'STAR' and :isAsc = True THEN star END asc,\n" +
+                        "CASE WHEN :sortingType = 'STAR' and :isAsc = False THEN star END desc,\n" +
+                        "CASE WHEN :sortingType = 'DISTANCE' and :isAsc = True THEN distance END asc,\n" +
+                        "CASE WHEN :sortingType = 'DISTANCE' and :isAsc = False THEN distance END desc " +
+                    "LIMIT :start, :end", nativeQuery = true
     )
     List<ShopTopResponseInterface> findByNameAndOrdering(
             @Param("searchValue") String searchValue,
             @Param("latitudeOrigin") double latitude,
             @Param("longitudeOrigin") double longitude,
             @Param("sortingType") String sortingType,
-            @Param("isAsc") boolean isAsc);
+            @Param("isAsc") boolean isAsc,
+            @Param("start") long start, @Param("end") long end);
 
 //    List<Shop> findByNameStartingWith(String name);
 

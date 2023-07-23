@@ -45,7 +45,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     //작성 가능한 리뷰 조회 서비스
     @Override
-    public List<ReservationDto.ResponseForReview> getReservationsForReview(Long memberId, LocalDate dateNow) {
+    public List<ReservationDto.ResponseForReview> getReservationsForReview(Long memberId, LocalDate dateNow, int pageIndex) {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
@@ -53,9 +53,13 @@ public class ReviewServiceImpl implements ReviewService {
         //해당 회원의 예약을 가져오는데, VISITED로 처리된 항목을 가져옴.
         //아직 예약일보다 일주일 이전이면, 조회할 수 있도록 해줌.
 
-        return reservationRepository.findReservationForReview(member, dateNow.minusWeeks(1))
+        Page<Reservation> reservations = reservationRepository.findReservationForReview(member, dateNow.minusWeeks(1), PageRequest.of(pageIndex, 10));
+
+        return reservations
+                .getContent()
                 .stream()
                 .map(x -> ReservationDto.ResponseForReview.builder()
+                        .reservationCount(reservations.getTotalElements())
                         .reservationId(x.getId())
                         .shopName(x.getShop().getName())
                         .visitDay(x.getResDay())
@@ -155,11 +159,10 @@ public class ReviewServiceImpl implements ReviewService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
-        int reviewCount = reviewRepository.countByMember(member);
         Page<Review> reviews = reviewRepository.findByMember(member, PageRequest.of(pageIndex, 10, Sort.by("id").descending()));
         return reviews.getContent()
                 .stream()
-                .map(x -> Review.toDto(x, reviewCount))
+                .map(x -> Review.toDto(x, reviews.getTotalElements()))
                 .collect(Collectors.toList());
     }
 
@@ -168,11 +171,10 @@ public class ReviewServiceImpl implements ReviewService {
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
 
-        int reviewCount = reviewRepository.countByShop(shop);
         Page<Review> reviews = reviewRepository.findByShop(shop, PageRequest.of(pageIndex, 10, Sort.by("id").descending()));
         return reviews.getContent()
                 .stream()
-                .map(x -> Review.toDto(x, reviewCount))
+                .map(x -> Review.toDto(x, reviews.getTotalElements()))
                 .collect(Collectors.toList());
     }
 

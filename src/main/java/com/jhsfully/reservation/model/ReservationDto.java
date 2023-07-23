@@ -45,6 +45,7 @@ public class ReservationDto {
     @AllArgsConstructor
     @Builder
     public static class ReservationResponse{
+        private long reservationCount;
         private Long id;
         private String shopName;
         private LocalDate resDay;
@@ -59,6 +60,7 @@ public class ReservationDto {
     @AllArgsConstructor
     @Builder
     public static class ResponseForReview{
+        private long reservationCount;
         private Long reservationId;
         private String shopName;
         private LocalDate visitDay;

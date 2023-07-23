@@ -59,12 +59,12 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
-    public void updateShop(Long memberId, ShopDto.UpdateShopRequest request) {
+    public void updateShop(Long memberId, Long shopId, ShopDto.AddShopRequest request) {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
-        Shop shop = shopRepository.findById(request.getShopId())
+        Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
 
         if(!Objects.equals(member.getId(), shop.getMember().getId())){
@@ -111,7 +111,7 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
-    public List<ShopTopResponseInterface> searchShops(ShopDto.SearchShopParam param) {
+    public List<ShopTopResponseInterface> searchShops(ShopDto.SearchShopParam param, int pageIndex) {
 
         //비효율적인 기존 방식 일단 보류
 //        List<Shop> shopList = shopRepository.findByNameStartingWith(param.getSearchValue());
@@ -150,7 +150,8 @@ public class ShopServiceImpl implements ShopService {
                 param.getLatitude(),
                 param.getLongitude(),
                 param.getSortingType().name(),
-                param.isAscending());
+                param.isAscending(),
+                pageIndex * 10, 10);
 
         return responses;
     }

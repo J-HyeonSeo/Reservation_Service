@@ -10,9 +10,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
-    int countByMember(Member member);
+
     Page<Review> findByMember(Member member, Pageable pageable);
 
-    int countByShop(Shop shop);
     Page<Review> findByShop(Shop shop, Pageable pageable);
 }

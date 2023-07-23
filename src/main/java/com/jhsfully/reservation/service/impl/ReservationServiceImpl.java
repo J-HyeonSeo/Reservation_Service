@@ -13,6 +13,8 @@ import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.ReservationService;
 import com.jhsfully.reservation.type.Days;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -65,19 +67,22 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public List<ReservationDto.ReservationResponse> getReservationForUser(Long memberId, LocalDate startDate) {
+    public List<ReservationDto.ReservationResponse> getReservationForUser(Long memberId, LocalDate startDate, int pageIndex) {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
-        return reservationRepository.findByMemberAndResDayGreaterThanEqual(member, startDate)
+        Page<Reservation> reservations = reservationRepository.findByMemberAndResDayGreaterThanEqual(member, startDate, PageRequest.of(pageIndex, 10));
+
+        return reservations
+                .getContent()
                 .stream()
-                .map(Reservation::toDto)
+                .map(x -> Reservation.toDto(x, reservations.getTotalElements()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<ReservationDto.ReservationResponse> getReservationByShop(Long memberId, Long shopId, LocalDate startDate) {
+    public List<ReservationDto.ReservationResponse> getReservationByShop(Long memberId, Long shopId, LocalDate startDate, int pageIndex) {
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
 
@@ -88,9 +93,12 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ShopException(SHOP_NOT_MATCH_USER);
         }
 
-        return reservationRepository.findByShopAndResDayGreaterThanEqual(shop, startDate)
+        Page<Reservation> reservations = reservationRepository.findByShopAndResDayGreaterThanEqual(shop, startDate, PageRequest.of(pageIndex, 10));
+
+        return reservations
+                .getContent()
                 .stream()
-                .map(Reservation::toDto)
+                .map(x -> Reservation.toDto(x, reservations.getTotalElements()))
                 .collect(Collectors.toList());
     }
 
@@ -172,7 +180,7 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ReservationException(RESERVATION_NOT_FOUND);
         }
 
-        return Reservation.toDto(reservation);
+        return Reservation.toDto(reservation, 1);
     }
 
     //방문 수행.

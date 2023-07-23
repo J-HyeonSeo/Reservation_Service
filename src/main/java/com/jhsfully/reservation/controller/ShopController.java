@@ -20,12 +20,12 @@ public class ShopController {
     private final ShopService shopService;
 
     //사용자가 검색해서 조회하는 매장 정보 목록 조회
-    @GetMapping("/user")
-    public ResponseEntity<?> searchShops(@ModelAttribute ShopDto.SearchShopParam param){
+    @GetMapping("/user/{pageIndex}")
+    public ResponseEntity<?> searchShops(@PathVariable int pageIndex, @ModelAttribute ShopDto.SearchShopParam param){
         if(param.getSearchValue() == null){
             param.setSearchValue("");
         }
-        List<ShopTopResponseInterface> responses = shopService.searchShops(param);
+        List<ShopTopResponseInterface> responses = shopService.searchShops(param, pageIndex);
         return ResponseEntity.ok(responses);
     }
 
@@ -61,10 +61,10 @@ public class ShopController {
     }
 
     //매장 정보를 수정함.
-    @PutMapping
-    public ResponseEntity<?> updateShop(@RequestBody @Valid ShopDto.UpdateShopRequest request){
+    @PutMapping("/{shopId}")
+    public ResponseEntity<?> updateShop(@PathVariable Long shopId, @RequestBody @Valid ShopDto.AddShopRequest request){
         Long memberId = MemberUtil.getMemberId();
-        shopService.updateShop(memberId, request);
+        shopService.updateShop(memberId, shopId, request);
         return ResponseEntity.ok().build();
     }
 
