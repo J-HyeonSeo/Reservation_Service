@@ -1,5 +1,6 @@
 package com.jhsfully.reservation.controller;
 
+import com.jhsfully.reservation.facade.ReviewFacade;
 import com.jhsfully.reservation.model.ReservationDto;
 import com.jhsfully.reservation.model.ReviewDto;
 import com.jhsfully.reservation.service.ReviewService;
@@ -17,7 +18,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReviewController {
 
-    private final ReviewService reviewService;
+    private final ReviewService reviewService; //get은 서비스에서 다이렉트로 호출함.
+    private final ReviewFacade reviewFacade;
+
 
     //리뷰 작성 가능 예약 조회
     //예약을 가져오는 것이라 ReservationController에 있어야 하지만, 유지보수를 위해
@@ -34,7 +37,7 @@ public class ReviewController {
     ResponseEntity<?> writeReview(@RequestBody @Valid ReviewDto.WriteReviewRequest request,
                                   @PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
-        reviewService.writeReview(request, memberId, reservationId, LocalDate.now());
+        reviewFacade.writeReviewAndAddShopStar(request, memberId, reservationId, LocalDate.now());
         return ResponseEntity.ok().build();
     }
 
@@ -43,7 +46,7 @@ public class ReviewController {
     ResponseEntity<?> updateReview(@RequestBody ReviewDto.WriteReviewRequest request,
                                    @PathVariable Long reviewId){
         Long memberId = MemberUtil.getMemberId();
-        reviewService.updateReview(request, memberId, reviewId, LocalDate.now());
+        reviewFacade.updateReviewAndUpdateShopStar(request, memberId, reviewId, LocalDate.now());
         return ResponseEntity.ok().build();
     }
 
@@ -51,7 +54,7 @@ public class ReviewController {
     @DeleteMapping("/{reviewId}")
     ResponseEntity<?> deleteReview(@PathVariable Long reviewId){
         Long memberId = MemberUtil.getMemberId();
-        reviewService.deleteReview(memberId, reviewId);
+        reviewFacade.deleteReviewAndSubShopStar(memberId, reviewId);
         return ResponseEntity.ok().build();
     }
 

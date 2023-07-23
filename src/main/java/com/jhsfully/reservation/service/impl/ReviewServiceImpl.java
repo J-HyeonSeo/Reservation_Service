@@ -72,8 +72,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     //리뷰 작성 서비스
     @Override
-    @Transactional
-    public void writeReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reservationId, LocalDate dateNow) {
+    public ReviewDto.WriteReviewResponse writeReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reservationId, LocalDate dateNow) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
@@ -93,22 +92,18 @@ public class ReviewServiceImpl implements ReviewService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        //리뷰 저장 및 OneToOne 맵핑
-        reviewRepository.save(review);
-        reservation.setReview(review);
-        reservationRepository.save(reservation);
+        //리뷰 저장
+        Review savedReview = reviewRepository.save(review);
 
-        //상점에 별점을 부여해야함.
-        Shop shop = reservation.getShop();
-        shop.addStar(request.getStar());
-        shop.calculateStar();
-        shopRepository.save(shop);
-
+        return ReviewDto.WriteReviewResponse.builder()
+                .reviewId(savedReview.getId())
+                .shopId(reservation.getShop().getId())
+                .build();
     }
 
     @Override
     @Transactional
-    public void updateReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reviewId, LocalDate dateNow) {
+    public ReviewDto.UpdateReviewResponse updateReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reviewId, LocalDate dateNow) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
@@ -118,24 +113,22 @@ public class ReviewServiceImpl implements ReviewService {
         //리뷰 수정 가능 검증
         validateUpdateReview(member, review, dateNow);
 
-        //별점 수정
-        Shop shop = review.getReservation().getShop();
-        shop.subStar(review.getStar());
-        shop.addStar(request.getStar());
-        shop.calculateStar();
-        shopRepository.save(shop);
+        int originStar = review.getStar();
 
         //리뷰 수정
         review.setContent(request.getContent());
-        review.setStar(review.getStar());
+        review.setStar(request.getStar());
         review.setUpdatedAt(LocalDateTime.now());
         reviewRepository.save(review);
 
+        return ReviewDto.UpdateReviewResponse.builder()
+                .originStar(originStar)
+                .shopId(review.getShop().getId())
+                .build();
     }
 
     @Override
-    @Transactional
-    public void deleteReview(Long memberId, Long reviewId) {
+    public ReviewDto.DeleteReviewResponse getDataForDeleteReview(Long memberId, Long reviewId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
@@ -148,15 +141,17 @@ public class ReviewServiceImpl implements ReviewService {
         //삭제 가능 검증.
         validateDeleteReview(review, member);
 
-        //별점 수정
-        Shop shop = review.getReservation().getShop();
-        shop.subStar(review.getStar());
-        shop.calculateStar();
-        shopRepository.save(shop);
+        return ReviewDto.DeleteReviewResponse.builder()
+                .reservationId(reservation.getId())
+                .shopId(review.getShop().getId())
+                .star(review.getStar())
+                .build();
+    }
 
-        //리뷰 삭제
-        reservation.setReview(null); //FK문제로 review를 할당 해제 한 후에 제거해야함.
-        reservationRepository.save(reservation);
+    @Override
+    public void deleteReviewComplete(Long reviewId){
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewException(REVIEW_NOT_FOUND));
         reviewRepository.delete(review);
     }
 

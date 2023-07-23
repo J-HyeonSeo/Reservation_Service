@@ -9,11 +9,12 @@ import java.util.List;
 public interface ReviewService {
     List<ReservationDto.ResponseForReview> getReservationsForReview(Long memberId, LocalDate dateNow, int pageIndex);
 
-    void writeReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reservationId, LocalDate dateNow);
+    ReviewDto.WriteReviewResponse writeReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reservationId, LocalDate dateNow);
 
-    void updateReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reviewId, LocalDate dateNow);
+    ReviewDto.UpdateReviewResponse updateReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reviewId, LocalDate dateNow);
 
-    void deleteReview(Long memberId, Long reviewId);
+    ReviewDto.DeleteReviewResponse getDataForDeleteReview(Long memberId, Long reviewId);
+    void deleteReviewComplete(Long reviewId);
 
     List<ReviewDto.ReviewResponse> getReviewsForUser(Long memberId, int pageIndex);
 

@@ -2,13 +2,16 @@ package com.jhsfully.reservation.service.impl;
 
 import com.jhsfully.reservation.domain.Member;
 import com.jhsfully.reservation.domain.Reservation;
+import com.jhsfully.reservation.domain.Review;
 import com.jhsfully.reservation.domain.Shop;
 import com.jhsfully.reservation.exception.AuthenticationException;
 import com.jhsfully.reservation.exception.ReservationException;
+import com.jhsfully.reservation.exception.ReviewException;
 import com.jhsfully.reservation.exception.ShopException;
 import com.jhsfully.reservation.model.ReservationDto;
 import com.jhsfully.reservation.repository.MemberRepository;
 import com.jhsfully.reservation.repository.ReservationRepository;
+import com.jhsfully.reservation.repository.ReviewRepository;
 import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.ReservationService;
 import com.jhsfully.reservation.type.Days;
@@ -26,6 +29,7 @@ import java.util.stream.Collectors;
 import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
 import static com.jhsfully.reservation.type.ReservationErrorType.*;
 import static com.jhsfully.reservation.type.ReservationState.*;
+import static com.jhsfully.reservation.type.ReviewErrorType.REVIEW_NOT_FOUND;
 import static com.jhsfully.reservation.type.ShopErrorType.*;
 
 @Service
@@ -33,6 +37,7 @@ import static com.jhsfully.reservation.type.ShopErrorType.*;
 public class ReservationServiceImpl implements ReservationService {
 
     private final ReservationRepository reservationRepository;
+    private final ReviewRepository reviewRepository;
     private final ShopRepository shopRepository;
     private final MemberRepository memberRepository;
 
@@ -225,6 +230,30 @@ public class ReservationServiceImpl implements ReservationService {
         validateForVisit(member, reservation, dateNow, timeNow);
 
         reservation.setReservationState(VISITED);
+        reservationRepository.save(reservation);
+    }
+
+    //파서드 단에서 호출되는, 리뷰 할당 함수.
+    @Override
+    public void setReview(Long reservationId, Long reviewId){
+
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ReviewException(REVIEW_NOT_FOUND));
+
+        reservation.setReview(review);
+        reservationRepository.save(reservation);
+    }
+
+    //파서드 단에서 호출되는, 리뷰 해제 함수.
+    @Override
+    public void releaseReview(Long reservationId){
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
+
+        reservation.setReview(null);
         reservationRepository.save(reservation);
     }
 

@@ -22,4 +22,7 @@ public interface ReservationService {
     ReservationDto.ReservationResponse getReservationForVisit(Long memberId, Long shopId, ReservationDto.GetReservationParam param, LocalDate dateNow, LocalTime timeNow);
 
     void visitReservation(Long memberId, Long reservationId, LocalDate dateNow, LocalTime timeNow);
+
+    public void setReview(Long reservationId, Long reviewId);
+    public void releaseReview(Long reviewId);
 }

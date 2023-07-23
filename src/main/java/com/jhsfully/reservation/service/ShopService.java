@@ -22,4 +22,8 @@ public interface ShopService {
 
     ShopDto.ShopDetailUserResponse getShopDetailForUser(Long shopId, LocalDate dateNow);
 
+    void addShopStar(Long shopId, int star);
+    void subShopStar(Long shopId, int star);
+    void updateShopStar(Long shopId, int originStar, int newStar);
+
 }

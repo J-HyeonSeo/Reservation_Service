@@ -4,6 +4,7 @@ import com.jhsfully.reservation.domain.Member;
 import com.jhsfully.reservation.domain.Shop;
 import com.jhsfully.reservation.exception.AuthenticationException;
 import com.jhsfully.reservation.exception.ShopException;
+import com.jhsfully.reservation.lock.RedisLock;
 import com.jhsfully.reservation.model.ShopDto;
 import com.jhsfully.reservation.model.ShopTopResponseInterface;
 import com.jhsfully.reservation.repository.MemberRepository;
@@ -311,5 +312,34 @@ public class ShopServiceImpl implements ShopService {
                 .build();
     }
 
+    //======================= 파서드 단에서 호출되는 함수들 =========================
+    @Override
+    @RedisLock(group = "review-shop", key = "shopId")
+    public void addShopStar(Long shopId, int star){
+        Shop shop = shopRepository.findById(shopId)
+                        .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
+        shop.addStar(star);
+        shop.calculateStar();
+        shopRepository.save(shop);
+    }
+    @Override
+    @RedisLock(group = "review-shop", key = "shopId")
+    public void subShopStar(Long shopId, int star){
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
+        shop.subStar(star);
+        shop.calculateStar();
+        shopRepository.save(shop);
+    }
 
+    @Override
+    @RedisLock(group = "review-shop", key = "shopId")
+    public void updateShopStar(Long shopId, int originStar, int newStar){
+        Shop shop = shopRepository.findById(shopId)
+                .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
+        shop.subStar(originStar);
+        shop.addStar(newStar);
+        shop.calculateStar();
+        shopRepository.save(shop);
+    }
 }

@@ -34,4 +34,26 @@ public class ReviewDto {
         private LocalDateTime updatedAt;
     }
 
+    //========== 서비스 => 파서드 간 사용되는 Dto =============
+    @Data
+    @Builder
+    public static class WriteReviewResponse{
+        private Long reviewId;
+        private Long shopId;
+    }
+
+    @Data
+    @Builder
+    public static class UpdateReviewResponse{
+        private int originStar;
+        private Long shopId;
+    }
+
+    @Data
+    @Builder
+    public static class DeleteReviewResponse{
+        private int star;
+        private Long reservationId;
+        private Long shopId;
+    }
 }
