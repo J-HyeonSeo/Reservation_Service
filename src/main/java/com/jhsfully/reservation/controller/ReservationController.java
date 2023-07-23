@@ -73,7 +73,7 @@ public class ReservationController {
     @GetMapping("/kiosk/{shopId}")
     public ResponseEntity<?> getReservationForVisit(@PathVariable Long shopId, @ModelAttribute @Valid ReservationDto.GetReservationParam param){
         Long memberId = MemberUtil.getMemberId();
-        ReservationDto.ReservationResponse response = reservationService.getReservationForVisit(memberId, shopId, LocalDate.now(), LocalTime.now());
+        ReservationDto.ReservationResponse response = reservationService.getReservationForVisit(memberId, shopId, param, LocalDate.now(), LocalTime.now());
         return ResponseEntity.ok(response);
     }
 

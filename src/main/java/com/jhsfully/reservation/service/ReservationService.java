@@ -19,7 +19,7 @@ public interface ReservationService {
 
     void assignReservation(Long memberId, Long reservationId, LocalDate dateNow);
 
-    ReservationDto.ReservationResponse getReservationForVisit(Long memberId, Long shopId, LocalDate dateNow, LocalTime timeNow);
+    ReservationDto.ReservationResponse getReservationForVisit(Long memberId, Long shopId, ReservationDto.GetReservationParam param, LocalDate dateNow, LocalTime timeNow);
 
     void visitReservation(Long memberId, Long reservationId, LocalDate dateNow, LocalTime timeNow);
 }

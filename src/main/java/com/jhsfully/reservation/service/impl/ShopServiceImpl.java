@@ -18,7 +18,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
@@ -206,6 +209,11 @@ public class ShopServiceImpl implements ShopService {
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
 
+        //오픈된 요일 데이터 가져오기.
+        HashSet<Integer> openDays = new HashSet<>();
+        shop.getResOpenDays().stream()
+                .forEach(x -> openDays.add(x.getValue()));
+
         //예약 관련 데이터 조회
         List<ShopDto.ReservationDateTimeSet> dateTimeSets = new ArrayList<>();
 
@@ -213,6 +221,11 @@ public class ShopServiceImpl implements ShopService {
 
         LocalDate presentDate = dateNow.plusDays(1); //오늘은 예약 가능일에 포함되지 말아야 함!
         while(!presentDate.isAfter(limitResDate)){
+
+            if(!openDays.contains(presentDate.getDayOfWeek().getValue())){
+                presentDate = presentDate.plusDays(1);
+                continue;
+            }
 
             ShopDto.ReservationDateTimeSet dateTimeSet = new ShopDto.ReservationDateTimeSet();
             dateTimeSet.setDate(presentDate);

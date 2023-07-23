@@ -67,6 +67,10 @@ public class Shop {
         this.reviewCount += 1;
     }
     public void calculateStar(){
+        if(this.reviewCount == 0){
+            this.star = 0;
+            return;
+        }
         this.star = this.starSum / (double)this.reviewCount;
     }
 

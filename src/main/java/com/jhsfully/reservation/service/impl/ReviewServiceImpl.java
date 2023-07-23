@@ -21,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -71,6 +72,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     //리뷰 작성 서비스
     @Override
+    @Transactional
     public void writeReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reservationId, LocalDate dateNow) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
@@ -105,6 +107,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    @Transactional
     public void updateReview(ReviewDto.WriteReviewRequest request, Long memberId, Long reviewId, LocalDate dateNow) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
@@ -131,12 +134,16 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    @Transactional
     public void deleteReview(Long memberId, Long reviewId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(REVIEW_NOT_FOUND));
+
+        Reservation reservation = reservationRepository.findByReview(review)
+                .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
 
         //해당 유저와 매칭되는 리뷰가 아닌가?
         if(!Objects.equals(review.getMember().getId(), member.getId())){
@@ -150,6 +157,8 @@ public class ReviewServiceImpl implements ReviewService {
         shopRepository.save(shop);
 
         //리뷰 삭제
+        reservation.setReview(null); //FK문제로 review를 할당 해제 한 후에 제거해야함.
+        reservationRepository.save(reservation);
         reviewRepository.delete(review);
     }
 

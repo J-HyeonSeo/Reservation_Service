@@ -66,6 +66,7 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
     }
 
+    //자신이 예약한 정보를 가져오는 함수(start 날의 이후의 데이터를 paging 하여 가져옴)
     @Override
     public List<ReservationDto.ReservationResponse> getReservationForUser(Long memberId, LocalDate startDate, int pageIndex) {
 
@@ -81,6 +82,7 @@ public class ReservationServiceImpl implements ReservationService {
                 .collect(Collectors.toList());
     }
 
+    //shop을 기준으로 파트너가 자신의 shop에 요청된 reservation들을 조회할 수 있음(start부터 조회되고, pageIndex로 페이징처리됨)
     @Override
     public List<ReservationDto.ReservationResponse> getReservationByShop(Long memberId, Long shopId, LocalDate startDate, int pageIndex) {
         Shop shop = shopRepository.findById(shopId)
@@ -102,6 +104,12 @@ public class ReservationServiceImpl implements ReservationService {
                 .collect(Collectors.toList());
     }
 
+    /*
+    예약을 삭제하는 함수임.
+    단, 아무 예약이나 삭제해주진 않고, READY상태인 예약만 정상적으로 삭제함.
+    EXPIRED(노쇼 및 파기), VISITED(방문완료), REJECT(거절) 상태는 삭제 불능이므로 에러 발생
+    ASSIGN의 경우에는 => EXPIRED로 바꾸어 예약을 파기 했다는 사실을 알림.
+     */
     @Override
     public void deleteReservation(Long memberId, Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -122,7 +130,8 @@ public class ReservationServiceImpl implements ReservationService {
 
     }
 
-    //예약 거절
+    //파트너가 자신의 shop에 들어온 예약을 거절하는 함수임. READY -> REJECT
+    //당일날 해당되는 예약은 REJECT처리할 수 없음. (단, 스케줄러에 의해 이미 REJECT로 자동처리됨.)
     @Override
     public void rejectReservation(Long memberId, Long reservationId, LocalDate dateNow) {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -139,7 +148,8 @@ public class ReservationServiceImpl implements ReservationService {
 
 
 
-    //예약 수행
+    //파트너가 자신의 shop에 들어온 예약을 승인하는 함수임, READY -> ASSIGN
+    //단, 오늘에 해당되는 예약은 승인 불가, (스케줄러에 의해, 당일날 예약이 READY시에는 자동으로 REJECT로 처리됨)
     @Override
     public void assignReservation(Long memberId, Long reservationId, LocalDate dateNow) {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -154,9 +164,16 @@ public class ReservationServiceImpl implements ReservationService {
         reservationRepository.save(reservation);
     }
 
-    //방문을 위한 예약 가져오기 로직
+    /*
+        키오스크에서 예약정보를 조회하기 위해 사용되는 함수
+        phone 넘버를 통해 가져옴.
+        키오스크는 기본적으로, partner의 계정으로 로그인되어 있음.
+        매개변수로 가져오는 memberId는 파트너의 멤버를 조회하고, shop과 매칭되는지 확인하기 위함임.
+        visitMember 는 방문하려는 사람이, 조회하는 핸드폰 번호로 member를 찾아줌.
+        reservation의 member는 reservation을 생성한 member의 데이터가 포함되어있음.
+    */
     @Override
-    public ReservationDto.ReservationResponse getReservationForVisit(Long memberId, Long shopId, LocalDate dateNow, LocalTime timeNow) {
+    public ReservationDto.ReservationResponse getReservationForVisit(Long memberId, Long shopId, ReservationDto.GetReservationParam param, LocalDate dateNow, LocalTime timeNow) {
         Shop shop = shopRepository.findById(shopId)
                 .orElseThrow(() -> new ShopException(SHOP_NOT_FOUND));
 
@@ -168,8 +185,12 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ShopException(SHOP_NOT_MATCH_USER);
         }
 
+        //phone 넘버를 통해, member를 조회해야함.
+        Member visitMember = memberRepository.findByPhone(param.getPhone())
+                .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
         Reservation reservation = reservationRepository
-                .findByShopAndResDayAndResTimeGreaterThanEqual(shop, dateNow, timeNow)
+                .findByMemberAndShopAndResDayAndResTimeGreaterThanEqual(visitMember, shop, dateNow, timeNow)
                 .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
 
         if(reservation.getReservationState() != ASSIGN){
@@ -192,23 +213,7 @@ public class ReservationServiceImpl implements ReservationService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
-        if(!Objects.equals(reservation.getShop().getMember().getId(), member.getId())){
-            throw new ShopException(SHOP_NOT_MATCH_USER);
-        }
-
-        if(reservation.getReservationState() != ASSIGN){
-            throw new ReservationException(RESERVATION_CANNOT_VISIT_NOT_ASSIGN);
-        }
-
-        //방문일과 예약일이 일치하지 않음.
-        if(!dateNow.equals(reservation.getResDay())){
-            throw new ReservationException(RESERVATION_CANNOT_VISIT_DAY_NOT_EQUAL);
-        }
-
-        //현재 시간이 예약시간대의 이전이 아님.
-        if(!timeNow.isBefore(reservation.getResTime())){
-            throw new ReservationException(RESERVATION_CANNOT_VISIT_TIME_OVER);
-        }
+        validateForVisit(member, reservation, dateNow, timeNow);
 
         reservation.setReservationState(VISITED);
         reservationRepository.save(reservation);
@@ -224,8 +229,8 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ReservationException(RESERVATION_CANNOT_ALLOW_ZERO);
         }
 
-        //예약 가능일 여부(오늘 + 1 ~ N주까지)
-        // .minusDays는 isAfter함수가 자기 자신을 포함하지 않기 때문에 넣어주었음.
+        //예약 가능일 여부(오늘 + 1 ~ N주뒤 까지)
+        // .plusDays 는 isBefore()함수를 통해 범위를 계산할 때, N주뒤에 해당되는 날까지 포함하기 위함임.
         if( !( request.getResDay().isAfter(dateNow) &&
                 request.getResDay().isBefore(dateNow.plusWeeks(shop.getResOpenWeek()).plusDays(1)) ) ){
 
@@ -338,5 +343,25 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ReservationException(RESERVATION_CANNOT_ASSIGN_NOW_EQUAL_BEFORE);
         }
 
+    }
+
+    private void validateForVisit(Member member, Reservation reservation, LocalDate dateNow, LocalTime timeNow){
+        if(!Objects.equals(reservation.getShop().getMember().getId(), member.getId())){
+            throw new ShopException(SHOP_NOT_MATCH_USER);
+        }
+
+        if(reservation.getReservationState() != ASSIGN){
+            throw new ReservationException(RESERVATION_CANNOT_VISIT_NOT_ASSIGN);
+        }
+
+        //방문일과 예약일이 일치하지 않음.
+        if(!dateNow.equals(reservation.getResDay())){
+            throw new ReservationException(RESERVATION_CANNOT_VISIT_DAY_NOT_EQUAL);
+        }
+
+        //현재 시간이 예약시간대의 이전이 아님.
+        if(!timeNow.isBefore(reservation.getResTime())){
+            throw new ReservationException(RESERVATION_CANNOT_VISIT_TIME_OVER);
+        }
     }
 }

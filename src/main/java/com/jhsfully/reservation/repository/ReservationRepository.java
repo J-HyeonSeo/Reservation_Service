@@ -2,6 +2,7 @@ package com.jhsfully.reservation.repository;
 
 import com.jhsfully.reservation.domain.Member;
 import com.jhsfully.reservation.domain.Reservation;
+import com.jhsfully.reservation.domain.Review;
 import com.jhsfully.reservation.domain.Shop;
 import com.jhsfully.reservation.type.ReservationState;
 import org.springframework.data.domain.Page;
@@ -47,6 +48,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     )
     Page<Reservation> findReservationForReview(Member member, LocalDate dateNow, Pageable pageable);
 
+    //FK참조를 지우기 위한 reservation 가져오기
+    Optional<Reservation> findByReview(Review review);
+
     @Query(
             "SELECT COALESCE(SUM(r.count), 0) FROM reservation r " +
                     "WHERE r.shop = ?1 AND " +
@@ -66,5 +70,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     Page<Reservation> findByShopAndResDayGreaterThanEqual(Shop shop, LocalDate startDate, Pageable pageable);
 
-    Optional<Reservation> findByShopAndResDayAndResTimeGreaterThanEqual(Shop shop, LocalDate resDay, LocalTime now);
+    Optional<Reservation> findByMemberAndShopAndResDayAndResTimeGreaterThanEqual(Member member, Shop shop, LocalDate resDay, LocalTime now);
 }
