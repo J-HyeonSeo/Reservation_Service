@@ -26,8 +26,7 @@ import java.util.stream.Collectors;
 import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
 import static com.jhsfully.reservation.type.ReservationErrorType.*;
 import static com.jhsfully.reservation.type.ReservationState.*;
-import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_FOUND;
-import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_MATCH_USER;
+import static com.jhsfully.reservation.type.ShopErrorType.*;
 
 @Service
 @RequiredArgsConstructor
@@ -90,6 +89,11 @@ public class ReservationServiceImpl implements ReservationService {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
+
+        //이미 삭제된 shop임.
+        if(shop.isDeleted()){
+            throw new ShopException(SHOP_IS_DELETED);
+        }
 
         if(!Objects.equals(member.getId(), shop.getMember().getId())){
             throw new ShopException(SHOP_NOT_MATCH_USER);
@@ -180,6 +184,11 @@ public class ReservationServiceImpl implements ReservationService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
 
+        //이미 삭제된 shop은 표시 X
+        if(shop.isDeleted()){
+            throw new ShopException(SHOP_IS_DELETED);
+        }
+
         //API가 조작되었는지 검증함.
         if(!Objects.equals(member.getId(), shop.getMember().getId())){
             throw new ShopException(SHOP_NOT_MATCH_USER);
@@ -227,6 +236,11 @@ public class ReservationServiceImpl implements ReservationService {
         //0명은 신청 불가능함
         if(request.getCount() == 0){
             throw new ReservationException(RESERVATION_CANNOT_ALLOW_ZERO);
+        }
+
+        //삭제된 shop은 예약 신청 X
+        if(shop.isDeleted()){
+            throw new ShopException(SHOP_IS_DELETED);
         }
 
         //예약 가능일 여부(오늘 + 1 ~ N주뒤 까지)

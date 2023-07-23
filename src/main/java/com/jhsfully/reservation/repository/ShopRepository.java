@@ -22,7 +22,7 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
     @Query(
             value = "SELECT count(*) over () as shopCount, id, name, introduce, address, st_distance_sphere(point(longitude, latitude), point(:longitudeOrigin, :latitudeOrigin)) as distance, star\n" +
                     "FROM shop\n" +
-                    "WHERE name like :searchValue \n" +
+                    "WHERE name like :searchValue AND is_deleted = false \n" +
                     "ORDER BY\n" +
                         "CASE WHEN :sortingType = 'TEXT' and :isAsc = True THEN name END asc,\n" +
                         "CASE WHEN :sortingType = 'TEXT' and :isAsc = False THEN name END desc,\n" +
@@ -42,6 +42,6 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
 
 //    List<Shop> findByNameStartingWith(String name);
 
-    Page<Shop> findByMember(Member member, Pageable pageable);
+    Page<Shop> findByMemberAndIsDeletedFalse(Member member, Pageable pageable);
 
 }

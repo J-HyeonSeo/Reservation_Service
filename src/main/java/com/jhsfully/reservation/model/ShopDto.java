@@ -70,7 +70,6 @@ public class ShopDto {
         private String name;
         private String introduce;
         private String address;
-        private double distance;
         private double star;
 
     }

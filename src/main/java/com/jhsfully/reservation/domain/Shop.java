@@ -2,7 +2,6 @@ package com.jhsfully.reservation.domain;
 
 import com.jhsfully.reservation.model.ShopDto;
 import com.jhsfully.reservation.type.Days;
-import com.jhsfully.reservation.util.DistanceUtil;
 import lombok.*;
 
 import javax.persistence.*;
@@ -74,19 +73,13 @@ public class Shop {
         this.star = this.starSum / (double)this.reviewCount;
     }
 
-    public static ShopDto.ShopTopResponse toTopResponse(Shop shop, double latitude, double longitude){
+    public static ShopDto.ShopTopResponse toTopResponse(Shop shop){
 
         return ShopDto.ShopTopResponse.builder()
                 .id(shop.getId())
                 .name(shop.getName())
                 .introduce(shop.getIntroduce())
                 .address(shop.getAddress())
-                .distance(DistanceUtil.haversine(
-                        latitude,
-                        longitude,
-                        shop.getLatitude(),
-                        shop.getLongitude()
-                ))
                 .star(shop.getStar())
                 .build();
     }
