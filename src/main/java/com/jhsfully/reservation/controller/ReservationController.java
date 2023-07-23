@@ -1,5 +1,6 @@
 package com.jhsfully.reservation.controller;
 
+import com.jhsfully.reservation.lock.RedisLock;
 import com.jhsfully.reservation.model.ReservationDto;
 import com.jhsfully.reservation.service.ReservationService;
 import com.jhsfully.reservation.util.MemberUtil;
@@ -20,7 +21,14 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
-    //예약 수행
+    /*
+        예약 수행
+        - 예약을 수행하는 과정은, 예약 카운트를 검증하는 과정에서 동시성 이슈가 발생할 수 있음.
+        - "09:00" 시간대에 허용예약이 최대 4였을 경우에, 동시에, 해당 함수가 실행될 경우에
+            둘다 최대 가능 예약이 4가 되어, 동시간대에 8명의 예약신청이 발생할 우려가 존재함.
+        - shopId를 기준으로, lock을 걸어, 같은 shop에 대하여 동시에 예약하지 못하도록 함.
+     */
+    @RedisLock(group = "reservation", key = "request.shopId")
     @PostMapping
     public ResponseEntity<?> addReservation(@RequestBody ReservationDto.AddReservationRequest request){
         Long memberId = MemberUtil.getMemberId();

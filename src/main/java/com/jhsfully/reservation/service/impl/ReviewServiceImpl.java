@@ -145,10 +145,8 @@ public class ReviewServiceImpl implements ReviewService {
         Reservation reservation = reservationRepository.findByReview(review)
                 .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
 
-        //해당 유저와 매칭되는 리뷰가 아닌가?
-        if(!Objects.equals(review.getMember().getId(), member.getId())){
-            throw new ReviewException(REVIEW_NOT_MATCH_USER);
-        }
+        //삭제 가능 검증.
+        validateDeleteReview(review, member);
 
         //별점 수정
         Shop shop = review.getReservation().getShop();
@@ -226,5 +224,11 @@ public class ReviewServiceImpl implements ReviewService {
             throw new ReviewException(REVIEW_TIME_OVER);
         }
 
+    }
+
+    private void validateDeleteReview(Review review, Member member){
+        if(!Objects.equals(review.getMember().getId(), member.getId())){
+            throw new ReviewException(REVIEW_NOT_MATCH_USER);
+        }
     }
 }
