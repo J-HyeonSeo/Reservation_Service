@@ -6,15 +6,22 @@ import com.jhsfully.reservation.service.ReviewService;
 import com.jhsfully.reservation.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
+/*
+    분산환경을 고려하여, 격리 수준을 커밋된 데이터를 가져오는 것으로 설정함.
+    이는 트랜잭션을 수행 중간에, 타 서버에서 DB에 커밋을 수행하였고, 해당 값을 가져올 수 있게함.
+
+    REVIEW - RESERVATION - SHOP 데이터가 일관성을 유지해야함.
+ */
+
 @Component
-@Transactional //중간에 하나라도 실패하면, 롤백되어야함.
+@Transactional(isolation = Isolation.READ_COMMITTED) //중간에 하나라도 실패하면, 롤백되어야함.
 @RequiredArgsConstructor
 public class ReviewFacade {
-
 
     private final ReviewService reviewService;
     private final ShopService shopService;
@@ -39,7 +46,11 @@ public class ReviewFacade {
 
     }
 
-
+    /*
+        reviewService에서 리뷰 수정 여부를 검증.
+        작성 가능하면, 필요한 데이터 반환
+        이후에, 별점을 수정함.
+     */
     public void updateReviewAndUpdateShopStar(ReviewDto.WriteReviewRequest request,
                                               Long memberId, Long reviewId,
                                               LocalDate dateNow){
@@ -51,15 +62,17 @@ public class ReviewFacade {
                 reviewResponse.getOriginStar(), request.getStar());
     }
 
+    /*
 
+     */
     public void deleteReviewAndSubShopStar(Long memberId, Long reviewId){
         ReviewDto.DeleteReviewResponse reviewResponse = reviewService.getDataForDeleteReview(
                 memberId, reviewId
         );
 
-        shopService.subShopStar(reviewResponse.getShopId(), reviewResponse.getStar());
         reservationService.releaseReview(reviewResponse.getReservationId());
         reviewService.deleteReviewComplete(reviewId);
+        shopService.subShopStar(reviewResponse.getShopId(), reviewResponse.getStar());
     }
 
 }

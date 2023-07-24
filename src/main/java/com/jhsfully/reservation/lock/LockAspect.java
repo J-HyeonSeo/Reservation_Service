@@ -35,7 +35,7 @@ public class LockAspect {
         String key = getKeyString(joinPoint, redisLock.key());
 
         //ex) "lock:reservation-1", "lock:review-1"
-        String lockKey = "lock:" + group + "-" + key;
+        String lockKey = "lock:" + group + "-" + key; //그룹과 키를 조합에 lockKey를 형성
 
         boolean acquired = false; //key를 얻었는지 확인하는 변수
 
@@ -56,7 +56,7 @@ public class LockAspect {
                 throw new RedisLockException(REDIS_ALREADY_LOCKED);
             }
         }finally {
-            if(acquired){
+            if(acquired){ //return하기 전에, 키를 취득하였을 경우 더 이상 필요없으므로 반환함.
                 log.info(lockKey + "를 반환하였습니다.");
                 releaseLock(lockKey);
             }
@@ -67,24 +67,30 @@ public class LockAspect {
     //key가 되어줄 String값을 매개변수에서 가져오는 함수.
     private String getKeyString(ProceedingJoinPoint joinPoint, String path){
 
+        //조인포인트의 매개변수 객체를 가져옴.
         Object[] args = joinPoint.getArgs();
 
+        //시그니처를 가져와서, 파라미터 이름을 추출함.
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         String[] parameterNames = parameterNameDiscoverer.getParameterNames(methodSignature.getMethod());
 
         log.info(Arrays.toString(parameterNames));
 
-        String[] parameterPath = path.split("\\."); // 점(.)을 기준으로 나눔
+        //파라미터.멤버변수.X 와 같이 표시된 값을 구분하기 위해, .으로 구분하여 나누어 줌.
+        String[] parameterPath = path.split("\\.");
 
         log.info(Arrays.toString(parameterPath));
 
+        //추출된 파라미터명을 비교함.
         for (int i = 0; i < parameterNames.length; i++) {
             if(parameterNames[i].equals(parameterPath[0])){
 
-                if(parameterPath.length == 1){ //멤버 변수가 없는 경우.
+                //파라미터명 자체가 값인 경우 바로 값을 리턴함.
+                if(parameterPath.length == 1){
                     return args[i] + "";
                 }
 
+                //아니라면, 재귀적으로 파고들어 값을 찾아옴.
                 try {
                     return findFieldValue(1, args[i], parameterPath);
                 }catch (Exception e){
@@ -119,9 +125,9 @@ public class LockAspect {
 
     // lock을 얻는 함수.
     private boolean getLock(String lockKey, Long timeout) throws InterruptedException {
-        Long startTime = System.currentTimeMillis();
-        Long endTime = startTime + timeout;
-        boolean result = false;
+        Long startTime = System.currentTimeMillis(); //현재 시간 측정.
+        Long endTime = startTime + timeout; //종료시간 = 현재 시간 + 타임 아웃
+        boolean result = false; //결과
 
         //timeout시간내에 lock을 취득하지 못하면 false를 리턴하게 되어있음.
         while(System.currentTimeMillis() < endTime){

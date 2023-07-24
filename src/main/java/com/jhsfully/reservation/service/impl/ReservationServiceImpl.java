@@ -114,10 +114,10 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     /*
-    예약을 삭제하는 함수임.
-    단, 아무 예약이나 삭제해주진 않고, READY상태인 예약만 정상적으로 삭제함.
-    EXPIRED(노쇼 및 파기), VISITED(방문완료), REJECT(거절) 상태는 삭제 불능이므로 에러 발생
-    ASSIGN의 경우에는 => EXPIRED로 바꾸어 예약을 파기 했다는 사실을 알림.
+        예약을 삭제하는 함수임.
+        단, 아무 예약이나 삭제해주진 않고, READY상태인 예약만 정상적으로 삭제함.
+        EXPIRED(노쇼 및 파기), VISITED(방문완료), REJECT(거절) 상태는 삭제 불능이므로 에러 발생
+        ASSIGN의 경우에는 => EXPIRED로 바꾸어 예약을 파기 했다는 사실을 알림.
      */
     @Override
     public void deleteReservation(Long memberId, Long reservationId) {
@@ -260,6 +260,7 @@ public class ReservationServiceImpl implements ReservationService {
 
     //=======================   검증 로직   ====================================
 
+    //예약 신청을 위한 검증 로직
     private void validateAddReservation(ReservationDto.AddReservationRequest request, Shop shop, Member member, LocalDate dateNow){
 
         //0명은 신청 불가능함
@@ -326,6 +327,12 @@ public class ReservationServiceImpl implements ReservationService {
 
     }
 
+    //예약 취소를 위한 검증 로직.
+    /*
+        EXPIRED, VISITED, REJECT는 취소 불가능 이므로 Throw Exception
+        ASSIGN 상태면, EXPIRED 상태로 변경하기 위해 false리턴
+        READY 상태면, 예약 데이터 삭제를 위해, true리턴.
+     */
     private boolean validateDeleteReservation(Reservation reservation, Member member){
 
         //해당 유저의 예약이 맞는가?
@@ -348,6 +355,7 @@ public class ReservationServiceImpl implements ReservationService {
         return true; //ready state
     }
 
+    //파트너가 예약을 거절하기 위한 검증 로직.
     private void validateRejectReservation(Member member, Reservation reservation, LocalDate dateNow) {
 
         //해당 매장의 주인이 아님.(API 조작 가능성을 염두하여 체크해야함)
@@ -368,6 +376,7 @@ public class ReservationServiceImpl implements ReservationService {
 
     }
 
+    //파트너가 예약을 승인하기 위한 검증로직.
     private void validateAssignReservation(Member member, Reservation reservation, LocalDate dateNow) {
 
         //해당 매장의 주인이 아님.(API 조작 가능성을 염두하여 체크해야함)
@@ -388,11 +397,15 @@ public class ReservationServiceImpl implements ReservationService {
 
     }
 
+    //방문하기 위한, 검증 로직임.
     private void validateForVisit(Member member, Reservation reservation, LocalDate dateNow, LocalTime timeNow){
+
+        //해당 점주의 계정으로 로그인된 키오스크 장치가 아님.
         if(!Objects.equals(reservation.getShop().getMember().getId(), member.getId())){
             throw new ShopException(SHOP_NOT_MATCH_USER);
         }
 
+        //승인 되지 않은 예약임.
         if(reservation.getReservationState() != ASSIGN){
             throw new ReservationException(RESERVATION_CANNOT_VISIT_NOT_ASSIGN);
         }

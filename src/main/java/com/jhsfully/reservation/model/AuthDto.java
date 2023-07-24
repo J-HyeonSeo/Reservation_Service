@@ -49,6 +49,13 @@ public class AuthDto {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class refreshResponse{
+        private String accessToken;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Builder
     public static class Response{
         private Long id;

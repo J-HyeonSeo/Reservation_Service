@@ -23,6 +23,8 @@ public class AuthServiceImpl implements AuthService {
     private final TokenProvider tokenProvider;
     private final MemberRepository memberRepository;
 
+    //회원가입을 수행, username이 중복되지 말아야함.
+    //파트너의 여부를 입력받아, 파트너에 대한 처리를 수행함.
     @Override
     public void signUp(AuthDto.SignUpRequest request, boolean isPartner) {
         int count = memberRepository.countByUsername(request.getUsername());
@@ -44,6 +46,20 @@ public class AuthServiceImpl implements AuthService {
         memberRepository.save(member);
     }
 
+    //로그인을 수행함.
+    //accessToken과 refreshToken을 발급하여, 유저에게 반환해줌.
+    /*
+        accessToken : 접근을 위한 토큰이며, 권한을 가지고 있고, 생명 주기는 30분
+        refreshToken : accessToken을 재발급하기 위한 토큰이며, 권한이 없고, 생명 주기는 2주
+
+        토큰 발급 로직
+        1. 로그인시, accessToken과 refreshToken을 발급하여 넘겨줌.
+        2. 평소에는 accessToken만 사용하여, 통신을 수행함.
+        3. accessToken의 기한이 만료될 경우, 401에러가 발생함.
+        4. 이 때, /auth/refresh로 accessToken의 발급을 시도해서 accessToken을 받는다.
+        5. 이 때, 401에러가 발생하면, 재 로그인이 필요한 경우이다.
+        6. 아닌 경우, accessToken을 다시 할당하여, 요청을 수행한다.
+     */
     @Override
     public AuthDto.SignInResponse signIn(AuthDto.SignInRequest request) {
 

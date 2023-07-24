@@ -78,6 +78,7 @@ public class ReservationController {
     }
 
     //키오스크를 위한, 예약 조회(연락처로 조회 10분전 ~ 예약시간 까지의 데이터만 조회가능)(파트너권한)
+    //키오스크는 기본적으로 파트너의 계정으로 로그인되어 있다고 가정함.
     @GetMapping("/kiosk/{shopId}")
     public ResponseEntity<?> getReservationForVisit(@PathVariable Long shopId, @ModelAttribute @Valid ReservationDto.GetReservationParam param){
         Long memberId = MemberUtil.getMemberId();
@@ -86,6 +87,7 @@ public class ReservationController {
     }
 
     //키오스크 도착확인(파트너권한)
+    //키오스크는 기본적으로 파트너의 계정으로 로그인되어 있다고 가정함.
     @PatchMapping("/visit/{reservationId}")
     public ResponseEntity<?> visitShopByReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
