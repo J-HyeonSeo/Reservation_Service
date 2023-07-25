@@ -1,65 +1,58 @@
-package com.jhsfully.reservation.service;
+package com.jhsfully.reservation.unit.service;
 
+import com.jhsfully.reservation.domain.Member;
 import com.jhsfully.reservation.domain.Shop;
 import com.jhsfully.reservation.exception.AuthenticationException;
 import com.jhsfully.reservation.exception.ShopException;
 import com.jhsfully.reservation.model.ShopDto;
 import com.jhsfully.reservation.model.ShopTopResponseInterface;
+import com.jhsfully.reservation.repository.MemberRepository;
+import com.jhsfully.reservation.repository.ReservationRepository;
 import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.impl.ShopServiceImpl;
 import com.jhsfully.reservation.type.Days;
 import com.jhsfully.reservation.type.SortingType;
 import org.junit.jupiter.api.*;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.datasource.init.ScriptUtils;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
 import static com.jhsfully.reservation.type.ShopErrorType.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 
 /*
-    ShopService 를 테스트하는 코드,
-    H2 Database 를 사용하여, 통합테스트를 진행함.
-
-    필요한 데이터는 .sql 파일을 통해 채워넣음.
+    Mockito를 사용하여, Unit테스트를 진행함.
  */
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class ShopServiceTest {
 
-    @BeforeAll
-    static void setup(@Autowired DataSource dataSource){
-        try(Connection connection = dataSource.getConnection()){
-            //데이터 초기화 및 추가
-            ScriptUtils.executeSqlScript(connection, new ClassPathResource("/testsqls/clean.sql"));
-            ScriptUtils.executeSqlScript(connection, new ClassPathResource("/testsqls/member.sql"));
-            ScriptUtils.executeSqlScript(connection, new ClassPathResource("/testsqls/shop.sql"));
-        }catch (SQLException e){
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Autowired
-    private ShopService shopService;
-
-    @Autowired
+    @Mock
     private ShopRepository shopRepository;
+    @Mock
+    private MemberRepository memberRepository;
+    @Mock
+    private ReservationRepository reservationRepository;
+    @InjectMocks
+    private ShopServiceImpl shopService;
+
 
     /*
         #######################################################################
@@ -73,6 +66,16 @@ class ShopServiceTest {
     @Transactional
     @DisplayName("[SERVICE]매장 추가 성공")
     void addShopSuccess(){
+        //given
+        given(memberRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        Member.builder()
+                                .id(1L)
+                                .build()
+                ));
+        given(shopRepository.save(any()))
+                .willReturn(Shop.builder().id(1L).build());
+
         //when
         Long shopId = shopService.addShop(1L, ShopDto.AddShopRequest.builder()
                         .name("aaa")
@@ -86,10 +89,11 @@ class ShopServiceTest {
                         .resOpenTimes(new ArrayList<>(Arrays.asList(LocalTime.of(9, 0), LocalTime.of(10, 30))))
                 .build());
         //then
-        Shop shop = shopRepository.findById(shopId)
-                .orElseThrow();
-
+        ArgumentCaptor<Shop> captor = ArgumentCaptor.forClass(Shop.class);
+        verify(shopRepository, times(1)).save(captor.capture());
+        Shop shop = captor.getValue();
         assertAll(
+                () -> assertEquals(1L, shop.getMember().getId()),
                 () -> assertEquals("aaa", shop.getName()),
                 () -> assertEquals("bbb", shop.getIntroduce()),
                 () -> assertEquals("ccc", shop.getAddress()),
@@ -106,6 +110,23 @@ class ShopServiceTest {
     @Transactional
     @DisplayName("[SERVICE]매장 수정 성공")
     void updateShopSuccess(){
+        //given
+        Member member = Member.builder().id(1L).build();
+
+        given(memberRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        member
+                ));
+        given(shopRepository.findById(anyLong()))
+                .willReturn(
+                        Optional.of(
+                                Shop.builder()
+                                        .id(1L)
+                                        .member(member)
+                                        .build()
+                        )
+                );
+
         //when
         shopService.updateShop(1L, 1L, ShopDto.AddShopRequest.builder()
                 .name("aaa")
@@ -119,8 +140,9 @@ class ShopServiceTest {
                 .resOpenTimes(new ArrayList<>(Arrays.asList(LocalTime.of(9, 0), LocalTime.of(10, 30))))
                 .build());
         //then
-        Shop shop = shopRepository.findById(1L)
-                .orElseThrow();
+        ArgumentCaptor<Shop> captor = ArgumentCaptor.forClass(Shop.class);
+        verify(shopRepository, times(1)).save(captor.capture());
+        Shop shop = captor.getValue();
 
         assertAll(
                 () -> assertEquals("aaa", shop.getName()),
@@ -137,14 +159,57 @@ class ShopServiceTest {
 
     @Test
     @Transactional
-    @DisplayName("[SERVICE]매장 삭제 성공")
-    void deleteShopSuccess(){
+    @DisplayName("[SERVICE]매장 삭제 성공 - (연관 데이터 X => 데이터 삭제")
+    void deleteShopSuccessHard(){
+        //given
+        Member member = Member.builder().id(1L).build();
+        given(memberRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        member
+                ));
+        given(shopRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        Shop.builder()
+                                .id(1L)
+                                .member(member)
+                                .build()
+                ));
+
         //when
         shopService.deleteShop(1L, 1L);
 
         //then
-        assertThrows(ShopException.class,
-                () -> shopService.deleteShop(1L, 1L));
+        verify(shopRepository, times(1)).delete(any());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("[SERVICE]매장 삭제 성공 - (연관 데이터 O => 상태만 변경")
+    void deleteShopSuccessSoft(){
+        //given
+        Member member = Member.builder().id(1L).build();
+        given(memberRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        member
+                ));
+        given(shopRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        Shop.builder()
+                                .id(1L)
+                                .member(member)
+                                .build()
+                ));
+
+        doThrow(new RuntimeException()).when(shopRepository).delete(any());
+
+        //when
+        shopService.deleteShop(1L, 1L);
+
+        //then
+        ArgumentCaptor<Shop> captor = ArgumentCaptor.forClass(Shop.class);
+        verify(shopRepository, times(1)).save(captor.capture());
+
+        assertEquals(true, captor.getValue().isDeleted());
     }
 
     //네이티브 쿼리는 Mockito를 사용하여 대체함.
@@ -152,12 +217,8 @@ class ShopServiceTest {
     @DisplayName("[SERVICE]매장 검색 성공")
     void searchShopsSuccess(){
 
-        //mocking
-        ShopRepository shopRepositoryMock = Mockito.mock(ShopRepository.class);
-        ShopService shopServiceMock = new ShopServiceImpl(shopRepositoryMock, null, null);
-
         //given
-        given(shopRepositoryMock.findByNameAndOrdering(anyString(), anyDouble(), anyDouble(), anyString(), anyBoolean(), anyLong(), anyLong()))
+        given(shopRepository.findByNameAndOrdering(anyString(), anyDouble(), anyDouble(), anyString(), anyBoolean(), anyLong(), anyLong()))
                 .willReturn(
                         new ArrayList<>(
                                 List.of(
@@ -202,7 +263,7 @@ class ShopServiceTest {
                 );
 
         //when
-        List<ShopTopResponseInterface> results = shopServiceMock.searchShops(ShopDto.SearchShopParam.builder()
+        List<ShopTopResponseInterface> results = shopService.searchShops(ShopDto.SearchShopParam.builder()
                 .isAscending(true)
                 .searchValue("")
                 .latitude(38.0)
@@ -226,6 +287,21 @@ class ShopServiceTest {
     @Test
     @DisplayName("[SERVICE]매장 조회 for 파트너 - 성공")
     void getShopsByPartnerSuccess(){
+        //given
+        given(memberRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        Member.builder().build()
+                ));
+        given(shopRepository.findByMemberAndIsDeletedFalse(any(), any()))
+                .willReturn(new PageImpl<>(new ArrayList<>(Arrays.asList(
+                        Shop.builder()
+                                .id(2L)
+                                .name("미용실")
+                                .introduce("싹둑")
+                                .address("서울")
+                                .star(0)
+                                .build()
+                )), PageRequest.of(0, 10), 1));
         //when
         List<ShopDto.ShopTopResponse> shops = shopService.getShopsByPartner(2L, 0);
 
@@ -244,6 +320,33 @@ class ShopServiceTest {
     @Transactional
     @DisplayName("[SERVICE]매장 상세 조회 for 파트너 - 성공")
     void getShopDetailForPartnerSuccess(){
+        //given
+        Member member = Member.builder().id(1L).build();
+        given(memberRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        member
+                ));
+        given(shopRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        Shop.builder()
+                                .id(1L)
+                                .member(member)
+                                .name("빵집")
+                                .introduce("빵")
+                                .address("서울")
+                                .star(0)
+                                .resOpenWeek(1)
+                                .resOpenCount(5)
+                                .resOpenDays(new ArrayList<>(Arrays.asList(Days.MON, Days.TUE, Days.WED, Days.THU)))
+                                .resOpenTimes(new ArrayList<>(Arrays.asList(
+                                        LocalTime.of(9, 0),
+                                        LocalTime.of(10, 00),
+                                        LocalTime.of(11, 00),
+                                        LocalTime.of(11, 30))))
+                                .createdAt(LocalDateTime.of(2023,7,25, 0, 0))
+                                .build()
+                ));
+
         //when
         ShopDto.ShopDetailPartnerResponse shopDetail = shopService
                 .getShopDetailForPartner(1L, 1L);
@@ -272,6 +375,34 @@ class ShopServiceTest {
     @Transactional
     @DisplayName("[SERVICE]매장 상세 조회 for 유저 - 성공")
     void getShopDetailForUserSuccess(){
+        //given
+        given(shopRepository.findById(anyLong()))
+                .willReturn(Optional.of(
+                        Shop.builder()
+                                .id(2L)
+                                .name("미용실")
+                                .introduce("싹둑")
+                                .star(0)
+                                .address("서울")
+                                .resOpenWeek(1)
+                                .resOpenCount(1)
+                                .resOpenTimes(
+                                        new ArrayList<>(
+                                                Arrays.asList(
+                                                        LocalTime.of(9,0)
+                                                )
+                                        )
+                                )
+                                .resOpenDays(
+                                        new ArrayList<>(
+                                                Arrays.asList(
+                                                        Days.WED, Days.THU, Days.FRI
+                                                )
+                                        )
+                                )
+                                .build()
+                ));
+
         //when
         ShopDto.ShopDetailUserResponse shopDetail = shopService
                 .getShopDetailForUser(2L, LocalDate.of(2023, 7, 25));
@@ -283,25 +414,39 @@ class ShopServiceTest {
                 () -> assertEquals("싹둑", shopDetail.getIntroduce()),
                 () -> assertEquals(0, shopDetail.getStar()),
                 () -> assertEquals("서울", shopDetail.getAddress()),
-                () -> assertEquals(7, shopDetail.getResOpenDateTimes().size())
+                () -> assertEquals(3, shopDetail.getResOpenDateTimes().size()),
+                () -> assertEquals(LocalTime.of(9, 0), shopDetail.getResOpenDateTimes().get(0).getReservationTimeSets().get(0).getTime()),
+                () -> assertEquals(1, shopDetail.getResOpenDateTimes().get(0).getReservationTimeSets().get(0).getCount())
         );
 
     }
 
     @Nested
     @DisplayName("[SERVICE]별점 조작 테스트")
-    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class StarControlTest{
         @Test
-        @Order(1)
         @DisplayName("[SERVICE]매장 별점 추가 성공")
         void addShopStarSuccess(){
+            //given
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(
+                            Optional.of(
+                                    Shop.builder()
+                                            .id(1L)
+                                            .star(0)
+                                            .starSum(0)
+                                            .reviewCount(0)
+                                            .build()
+                            )
+                    );
+
             //when
             shopService.addShopStar(1L, 5);
             shopService.addShopStar(1L, 3);
             //then
-            Shop shop = shopRepository.findById(1L)
-                    .orElseThrow();
+            ArgumentCaptor<Shop> captor = ArgumentCaptor.forClass(Shop.class);
+            verify(shopRepository, times(2)).save(captor.capture());
+            Shop shop = captor.getValue();
 
             assertAll(
                     () -> assertEquals(4, shop.getStar()),
@@ -311,37 +456,61 @@ class ShopServiceTest {
         }
 
         @Test
-        @Order(2)
+        @DisplayName("[SERVICE]매장 별점 차감 성공")
+        void subShopStarSuccess(){
+            //given
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(
+                            Optional.of(
+                                    Shop.builder()
+                                            .id(1L)
+                                            .star(5)
+                                            .starSum(10)
+                                            .reviewCount(2)
+                                            .build()
+                            )
+                    );
+            //when
+            shopService.subShopStar(1L, 5);
+
+            //then
+            ArgumentCaptor<Shop> captor = ArgumentCaptor.forClass(Shop.class);
+            verify(shopRepository, times(1)).save(captor.capture());
+            Shop shop = captor.getValue();
+
+            assertAll(
+                    () -> assertEquals(5, shop.getStar()),
+                    () -> assertEquals(1, shop.getReviewCount()),
+                    () -> assertEquals(5, shop.getStarSum())
+            );
+        }
+
+        @Test
         @DisplayName("[SERVICE]매장 별점 수정 성공")
         void updateShopStarSuccess(){
+            //given
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(
+                            Optional.of(
+                                    Shop.builder()
+                                            .id(1L)
+                                            .star(5)
+                                            .starSum(10)
+                                            .reviewCount(2)
+                                            .build()
+                            )
+                    );
             //when
-            shopService.updateShopStar(1L, 3, 2);
+            shopService.updateShopStar(1L, 5, 2);
             //then
-            Shop shop = shopRepository.findById(1L)
-                    .orElseThrow();
+            ArgumentCaptor<Shop> captor = ArgumentCaptor.forClass(Shop.class);
+            verify(shopRepository, times(1)).save(captor.capture());
+            Shop shop = captor.getValue();
 
             assertAll(
                     () -> assertEquals(3.5, shop.getStar()),
                     () -> assertEquals(2, shop.getReviewCount()),
                     () -> assertEquals(7, shop.getStarSum())
-            );
-        }
-
-        @Test
-        @Order(3)
-        @DisplayName("[SERVICE]매장 별점 차감 성공")
-        void subShopStarSuccess(){
-            //when
-            shopService.subShopStar(1L, 2);
-            shopService.subShopStar(1L, 5);
-            //then
-            Shop shop = shopRepository.findById(1L)
-                    .orElseThrow();
-
-            assertAll(
-                    () -> assertEquals(0, shop.getStar()),
-                    () -> assertEquals(0, shop.getReviewCount()),
-                    () -> assertEquals(0, shop.getStarSum())
             );
         }
 
@@ -359,6 +528,10 @@ class ShopServiceTest {
     @Test
     @DisplayName("[SERVICE]매장 추가 - 실패 (유저 X)")
     void addShopFailUserNotFound(){
+        //given
+        given(memberRepository.findById(anyLong()))
+                .willReturn(Optional.empty());
+
         //when
         AuthenticationException exception = assertThrows(AuthenticationException.class,
                 () -> shopService.addShop(999L, ShopDto.AddShopRequest.builder().build()));
@@ -376,6 +549,10 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 수정 - 실패 (유저X)")
         void updateShopFailUserNotFound(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
+
             //when
             AuthenticationException exception = assertThrows(AuthenticationException.class,
                     () -> shopService.updateShop(999L, 1L, ShopDto.AddShopRequest.builder().build()));
@@ -387,6 +564,15 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 수정 - 실패 (매장X)")
         void updateShopFailShopNotFound(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Member.builder()
+                                    .id(1L)
+                                    .build()
+                    ));
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.updateShop(1L, 999L, ShopDto.AddShopRequest.builder().build()));
@@ -398,6 +584,17 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 수정 - 실패 (매장 삭제 상태)")
         void updateShopFailShopIsDeleted(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Member.builder()
+                                    .id(1L)
+                                    .build()
+                    ));
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Shop.builder().isDeleted(true).build()
+                    ));
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.updateShop(1L, 3L, ShopDto.AddShopRequest.builder().build()));
@@ -409,6 +606,17 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 수정 - 실패 (매장의 주인이 X)")
         void updateShopFailNotMatchUser(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Member.builder()
+                                    .id(1L)
+                                    .build()
+                    ));
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Shop.builder().member(Member.builder().id(2L).build()).build()
+                    ));
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.updateShop(1L, 2L, ShopDto.AddShopRequest.builder().build()));
@@ -425,6 +633,9 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 삭제 - 실패 (유저X)")
         void deleteShopFailUserNotFound(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             AuthenticationException exception = assertThrows(AuthenticationException.class,
                     () -> shopService.deleteShop(999L, 1L));
@@ -436,6 +647,15 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 삭제 - 실패 (매장X)")
         void deleteShopFailShopNotFound(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Member.builder()
+                                    .id(1L)
+                                    .build()
+                    ));
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.deleteShop(1L, 999L));
@@ -447,6 +667,17 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 삭제 - 실패 (매장의 주인이 X)")
         void deleteShopFailNotMatchUser(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Member.builder()
+                                    .id(1L)
+                                    .build()
+                    ));
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Shop.builder().member(Member.builder().id(2L).build()).build()
+                    ));
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.deleteShop(1L, 2L));
@@ -460,6 +691,9 @@ class ShopServiceTest {
     @Test
     @DisplayName("[SERVICE]매장 목록 조회 for 파트너 - 실패(유저 X)")
     void getShopsByPartnerFailUserNotFound(){
+        //given
+        given(memberRepository.findById(anyLong()))
+                .willReturn(Optional.empty());
         //when
         AuthenticationException exception = assertThrows(AuthenticationException.class,
                 () -> shopService.getShopsByPartner(999L, 0));
@@ -476,6 +710,9 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 상세 조회 for 파트너 - 실패(유저 X)")
         void getShopDetailForPartnerFailUserNotFound(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             AuthenticationException exception = assertThrows(AuthenticationException.class,
                     () -> shopService.getShopDetailForPartner(999L, 1L));
@@ -486,6 +723,15 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 상세 조회 for 파트너 - 실패(매장 X)")
         void getShopDetailForPartnerFailShopNotFound(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Member.builder()
+                                    .id(1L)
+                                    .build()
+                    ));
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.getShopDetailForPartner(1L, 999L));
@@ -496,6 +742,17 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 상세 조회 for 파트너 - 실패(매장 삭제 상태)")
         void getShopDetailForPartnerFailShopIsDeleted(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Member.builder()
+                                    .id(1L)
+                                    .build()
+                    ));
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Shop.builder().isDeleted(true).build()
+                    ));
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.getShopDetailForPartner(1L, 3L));
@@ -506,6 +763,17 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE]매장 상세 조회 for 파트너 - 실패(매장 소유자 일치 X)")
         void getShopDetailForPartnerFailNotMatchUser(){
+            //given
+            given(memberRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Member.builder()
+                                    .id(1L)
+                                    .build()
+                    ));
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Shop.builder().member(Member.builder().id(2L).build()).build()
+                    ));
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.getShopDetailForPartner(1L, 2L));
@@ -523,6 +791,9 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE] 매장 상세 조회 for 유저 - 실패(매장 X)")
         void getShopDetailForUserFailShopNotFound(){
+            //given
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.getShopDetailForUser(999L, LocalDate.now()));
@@ -533,6 +804,11 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE] 매장 상세 조회 for 유저 - 실패(매장 삭제 상태)")
         void getShopDetailForUserFailShopIsDeleted(){
+            //given
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.of(
+                            Shop.builder().isDeleted(true).build()
+                    ));
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.getShopDetailForUser(3L, LocalDate.now()));
@@ -548,6 +824,9 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE] 매장 별점 추가 - 실패(매장 X)")
         void addShopStarFailShopNotFound(){
+            //given
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.addShopStar(999L, 5));
@@ -557,6 +836,9 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE] 매장 별점 차감 - 실패(매장 X)")
         void subShopStarFailShopNotFound(){
+            //given
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.subShopStar(999L, 5));
@@ -566,6 +848,9 @@ class ShopServiceTest {
         @Test
         @DisplayName("[SERVICE] 매장 별점 수정 - 실패(매장 X)")
         void updateShopStarFailShopNotFound(){
+            //given
+            given(shopRepository.findById(anyLong()))
+                    .willReturn(Optional.empty());
             //when
             ShopException exception = assertThrows(ShopException.class,
                     () -> shopService.updateShopStar(999L, 3, 5));
