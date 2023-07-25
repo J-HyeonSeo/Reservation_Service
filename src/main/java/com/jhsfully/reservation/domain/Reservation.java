@@ -17,7 +17,7 @@ import java.time.LocalTime;
 public class Reservation {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
     private Shop shop;

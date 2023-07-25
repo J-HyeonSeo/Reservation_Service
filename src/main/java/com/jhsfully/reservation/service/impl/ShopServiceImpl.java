@@ -40,7 +40,7 @@ public class ShopServiceImpl implements ShopService {
     private final ReservationRepository reservationRepository;
 
     @Override
-    public void addShop(Long memberId, ShopDto.AddShopRequest request) {
+    public Long addShop(Long memberId, ShopDto.AddShopRequest request) {
 
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new AuthenticationException(AUTHENTICATION_USER_NOT_FOUND));
@@ -61,7 +61,7 @@ public class ShopServiceImpl implements ShopService {
                 .isDeleted(false)
                 .build();
 
-        shopRepository.save(shop);
+        return shopRepository.save(shop).getId();
     }
 
     /*

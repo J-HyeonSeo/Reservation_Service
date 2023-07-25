@@ -2,7 +2,7 @@ package com.jhsfully.reservation.model;
 
 public interface ShopTopResponseInterface {
     long getShopCount();
-    String getId();
+    Long getId();
     String getName();
     String getIntroduce();
     String getAddress();

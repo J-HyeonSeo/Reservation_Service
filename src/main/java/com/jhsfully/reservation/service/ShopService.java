@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface ShopService {
 
-    void addShop(Long memberId, ShopDto.AddShopRequest request);
+    Long addShop(Long memberId, ShopDto.AddShopRequest request);
 
     void updateShop(Long memberId, Long shopId, ShopDto.AddShopRequest requestt);
 

@@ -88,7 +88,7 @@ public class ReservationController {
 
     //키오스크 도착확인(파트너권한)
     //키오스크는 기본적으로 파트너의 계정으로 로그인되어 있다고 가정함.
-    @PatchMapping("/visit/{reservationId}")
+    @PatchMapping("/kiosk/visit/{reservationId}")
     public ResponseEntity<?> visitShopByReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
         reservationService.visitReservation(memberId, reservationId, LocalDate.now(), LocalTime.now());

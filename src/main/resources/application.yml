@@ -4,24 +4,35 @@ spring:
       enabled: true
       path: /h2-console
 
+#  MYSQL SETTINGS
+
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#    database: mysql
+#    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+#
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/reservation?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+#    username: root
+#    password: 12341234
+
+
+#  H2 DATABASE SETTINGS
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
     database: mysql
-#    database-platform: org.hibernate.dialect.H2Dialect
-    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    database-platform: org.hibernate.dialect.H2Dialect
 
   datasource:
-    url: jdbc:mysql://localhost:3306/reservation?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: root
-    password: 12341234
-
-#  datasource:
-#    driver-class-name: org.h2.Driver
-#    url: jdbc:h2:mem:jhsfully
-#    username: sa
-#    password:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:jhsfully
+    username: sa
+    password:
 
   redis:
     host: localhost

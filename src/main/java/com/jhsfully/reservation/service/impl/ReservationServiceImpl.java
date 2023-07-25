@@ -208,11 +208,11 @@ public class ReservationServiceImpl implements ReservationService {
                 .orElseThrow(() -> new ReservationException(RESERVATION_NOT_FOUND));
 
         if(reservation.getReservationState() != ASSIGN){
-            throw new ReservationException(RESERVATION_NOT_FOUND);
+            throw new ReservationException(RESERVATION_CANNOT_VISIT_NOT_ASSIGN);
         }
 
         if(!timeNow.isAfter(reservation.getResTime().minusMinutes(10))){
-            throw new ReservationException(RESERVATION_NOT_FOUND);
+            throw new ReservationException(RESERVATION_CANNOT_VISIT_TIME_OVER);
         }
 
         return Reservation.toDto(reservation, 1);

@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class Review {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
     private Member member;
