@@ -24,5 +24,5 @@ public interface ReservationService {
     void visitReservation(Long memberId, Long reservationId, LocalDate dateNow, LocalTime timeNow);
 
     public void setReview(Long reservationId, Long reviewId);
-    public void releaseReview(Long reviewId);
+    public void releaseReview(Long reservationId);
 }
