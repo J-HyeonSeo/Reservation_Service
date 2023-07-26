@@ -10,7 +10,7 @@ public interface ShopService {
 
     Long addShop(Long memberId, ShopDto.AddShopRequest request);
 
-    void updateShop(Long memberId, Long shopId, ShopDto.AddShopRequest requestt);
+    void updateShop(Long memberId, Long shopId, ShopDto.AddShopRequest request);
 
     void deleteShop(Long memberId, Long shopId);
 

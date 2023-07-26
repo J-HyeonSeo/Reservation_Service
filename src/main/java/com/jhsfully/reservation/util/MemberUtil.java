@@ -6,18 +6,23 @@ public class MemberUtil {
 
     public static Long getMemberId(){
         if(SecurityContextHolder.getContext() == null){
-            return null;
+            return -1L;
         }
         if(SecurityContextHolder.getContext().getAuthentication() == null){
-            return null;
+            return -1L;
         }
         if(SecurityContextHolder.getContext().getAuthentication().getName() == null){
-            return null;
+            return -1L;
         }
 
         String stringMemberId = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        return Long.parseLong(stringMemberId);
+        Long result;
+        try{
+            result = Long.parseLong(stringMemberId);
+        }catch (Exception e){
+            result = -1L;
+        }
+        return result;
     }
 
 }
