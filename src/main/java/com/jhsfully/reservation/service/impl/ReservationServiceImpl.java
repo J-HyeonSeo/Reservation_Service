@@ -416,7 +416,7 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         //현재 시간이 예약시간대의 이전이 아님.
-        if(!timeNow.isBefore(reservation.getResTime())){
+        if(timeNow.isAfter(reservation.getResTime())){
             throw new ReservationException(RESERVATION_CANNOT_VISIT_TIME_OVER);
         }
     }
