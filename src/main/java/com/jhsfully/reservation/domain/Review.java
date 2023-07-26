@@ -34,7 +34,7 @@ public class Review {
         return ReviewDto.ReviewResponse.builder()
                 .id(review.getId())
                 .reviewCount(reviewCount)
-                .memberName(review.getReservation().getMember().getName())
+                .memberName(review.getMember().getName())
                 .star(review.getStar())
                 .content(review.getContent())
                 .createdAt(review.getCreatedAt())

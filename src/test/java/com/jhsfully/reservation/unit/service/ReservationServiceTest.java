@@ -44,6 +44,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+/*
+    Mockito를 사용하여, 예약 서비스의 단위테스트를 진행함.
+ */
 @ExtendWith(MockitoExtension.class)
 public class ReservationServiceTest {
 
