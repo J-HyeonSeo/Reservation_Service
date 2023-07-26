@@ -33,7 +33,7 @@ public class ReservationController {
     public ResponseEntity<?> addReservation(@RequestBody ReservationDto.AddReservationRequest request){
         Long memberId = MemberUtil.getMemberId();
         reservationService.addReservation(memberId, request, LocalDate.now());
-        return null;
+        return ResponseEntity.ok().build();
     }
 
     //예약 취소
@@ -46,7 +46,7 @@ public class ReservationController {
 
     //유저 예약 조회(예약 승인/거절 상태 표시) -> 내용이 간단하므로 상세조회는 구현하지 않음.
     @GetMapping("/user/{pageIndex}")
-    public ResponseEntity<?> getReservationsForUser(@PathVariable int pageIndex, @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
+    public ResponseEntity<?> getReservationsForUser(@PathVariable int pageIndex, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
         List<ReservationDto.ReservationResponse> responses = reservationService.getReservationForUser(memberId, startDate, pageIndex);
         return ResponseEntity.ok(responses);
