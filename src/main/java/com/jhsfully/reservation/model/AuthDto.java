@@ -40,6 +40,14 @@ public class AuthDto {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class RefreshRequest{
+        @NotBlank(message = "토큰이 비어있습니다.")
+        private String refreshToken;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SignInResponse{
         private String name;
         private String accessToken;

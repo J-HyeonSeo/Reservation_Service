@@ -43,7 +43,8 @@ public class AuthController {
 
     //토큰 재발급
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(){
-        return null;
+    public ResponseEntity<?> refresh(@RequestBody AuthDto.RefreshRequest request){
+        AuthDto.refreshResponse refreshResponse = authService.tokenRefresh(request.getRefreshToken());
+        return ResponseEntity.ok(refreshResponse);
     }
 }

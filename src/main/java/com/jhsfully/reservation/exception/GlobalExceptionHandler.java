@@ -8,6 +8,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_UNAUTHORIZED;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,6 +26,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<?> customExceptionHandler(CustomException e){
+
+        //인증 되지 않은 사용자
+        if(e instanceof AuthenticationException){
+            AuthenticationException authenticationException = (AuthenticationException)e;
+            if(AUTHENTICATION_UNAUTHORIZED == authenticationException.getAuthenticationErrorType()){
+                return ResponseEntity.status(401).body(
+                        new ErrorResponse(
+                                HttpStatus.UNAUTHORIZED.value(),
+                                e.getMessage()
+                        )
+                );
+            }
+        }
+
         return ResponseEntity.internalServerError().body(
                 new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage())
         );

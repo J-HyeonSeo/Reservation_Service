@@ -1,8 +1,9 @@
 package com.jhsfully.reservation.security;
 
 import com.jhsfully.reservation.domain.RefreshToken;
-import com.jhsfully.reservation.exception.RefreshTokenException;
+import com.jhsfully.reservation.exception.AuthenticationException;
 import com.jhsfully.reservation.repository.RefreshTokenRepository;
+import com.jhsfully.reservation.type.AuthenticationErrorType;
 import com.jhsfully.reservation.type.RoleType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -21,8 +22,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.jhsfully.reservation.type.RefreshTokenErrorType.REFRESH_TOKEN_NOT_FOUND;
-
 @Component
 @RequiredArgsConstructor
 public class TokenProvider {
@@ -35,7 +34,7 @@ public class TokenProvider {
     private static final String MEMBER_ID = "memberId";
     private static final String IS_PARTNER = "partner";
     private static final String IS_ADMIN = "admin";
-    private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 30 * 240;//1초 -> 1분 -> 30분
+    private static final long ACCESS_TOKEN_EXPIRE_TIME = 1000 * 60 * 30;//1초 -> 1분 -> 30분
     private static final long REFRESH_TOKEN_EXPIRE_TIME = 1000 * 60 * 60 * 24 * 14;//1초 -> 1분 -> 1시간 -> 1일 -> 2주
 
     private final RefreshTokenRepository refreshTokenRepository;
@@ -62,9 +61,9 @@ public class TokenProvider {
     //Refresh토큰으로 AccessToken생성
     public String generateAccessTokenByRefresh(String refreshToken){
 
-        //redis에 refreshToken이 등록되어있는지 확인.
+        //redis에 refreshToken이 저장되어있는지 확인하고, 가져옴.
         RefreshToken refreshTokenEntity = refreshTokenRepository.findById(refreshToken)
-                .orElseThrow(() -> new RefreshTokenException(REFRESH_TOKEN_NOT_FOUND));
+                .orElseThrow(() -> new AuthenticationException(AuthenticationErrorType.AUTHENTICATION_UNAUTHORIZED));
 
         //memberId 가져오기
         Long memberId = getMemberId(refreshToken);
@@ -82,14 +81,18 @@ public class TokenProvider {
         Date now = new Date();
         Date expiredDate = new Date(now.getTime() + REFRESH_TOKEN_EXPIRE_TIME);
 
-        //추후에 REDIS 저장 로직 구현해야함.
-
-        return Jwts.builder()
+        String refreshToken = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
                 .setExpiration(expiredDate)
                 .signWith(SignatureAlgorithm.HS512, secretKey)
                 .compact();
+
+        //Redis에 refreshToken을 저장함.
+        RefreshToken refreshTokenEntity = new RefreshToken(refreshToken, isPartner, isAdmin);
+        refreshTokenRepository.save(refreshTokenEntity);
+
+        return refreshToken;
     }
 
     //토큰을 통해, 인증 객체 생성.

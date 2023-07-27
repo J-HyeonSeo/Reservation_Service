@@ -7,6 +7,7 @@ import com.jhsfully.reservation.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -29,6 +30,7 @@ public class ReservationController {
         - shopId를 기준으로, lock을 걸어, 같은 shop에 대하여 동시에 예약하지 못하도록 함.
      */
     @RedisLock(group = "reservation", key = "request.shopId")
+    @PreAuthorize("hasRole('USER')")
     @PostMapping
     public ResponseEntity<?> addReservation(@RequestBody ReservationDto.AddReservationRequest request){
         Long memberId = MemberUtil.getMemberId();
@@ -37,6 +39,7 @@ public class ReservationController {
     }
 
     //예약 취소
+    @PreAuthorize("hasRole('USER')")
     @DeleteMapping("/{reservationId}")
     public ResponseEntity<?> deleteReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
@@ -45,6 +48,7 @@ public class ReservationController {
     }
 
     //유저 예약 조회(예약 승인/거절 상태 표시) -> 내용이 간단하므로 상세조회는 구현하지 않음.
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/user/{pageIndex}")
     public ResponseEntity<?> getReservationsForUser(@PathVariable int pageIndex, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
@@ -54,6 +58,7 @@ public class ReservationController {
 
 
     //매장 예약 조회(파트너)
+    @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/partner/{shopId}/{pageIndex}")
     public ResponseEntity<?> getReservationsByShop(@PathVariable Long shopId, @PathVariable int pageIndex, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
@@ -62,6 +67,7 @@ public class ReservationController {
     }
 
     //매장 예약 거절(파트너가 들어온 예약을 거절함)
+    @PreAuthorize("hasRole('PARTNER')")
     @PatchMapping("/reject/{reservationId}")
     public ResponseEntity<?> rejectReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
@@ -70,6 +76,7 @@ public class ReservationController {
     }
 
     //매장 예약 수락(파트너가 들어온 예약을 수락함)
+    @PreAuthorize("hasRole('PARTNER')")
     @PatchMapping("/assign/{reservationId}")
     public ResponseEntity<?> assignReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();
@@ -79,6 +86,7 @@ public class ReservationController {
 
     //키오스크를 위한, 예약 조회(연락처로 조회 10분전 ~ 예약시간 까지의 데이터만 조회가능)(파트너권한)
     //키오스크는 기본적으로 파트너의 계정으로 로그인되어 있다고 가정함.
+    @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/kiosk/{shopId}")
     public ResponseEntity<?> getReservationForVisit(@PathVariable Long shopId, @ModelAttribute @Valid ReservationDto.GetReservationParam param){
         Long memberId = MemberUtil.getMemberId();
@@ -88,6 +96,7 @@ public class ReservationController {
 
     //키오스크 도착확인(파트너권한)
     //키오스크는 기본적으로 파트너의 계정으로 로그인되어 있다고 가정함.
+    @PreAuthorize("hasRole('PARTNER')")
     @PatchMapping("/kiosk/visit/{reservationId}")
     public ResponseEntity<?> visitShopByReservation(@PathVariable Long reservationId){
         Long memberId = MemberUtil.getMemberId();

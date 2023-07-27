@@ -7,6 +7,7 @@ import com.jhsfully.reservation.service.ReviewService;
 import com.jhsfully.reservation.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -33,6 +34,7 @@ public class ReviewController {
     }
 
     //리뷰 작성
+    @PreAuthorize("hasRole('USER')")
     @PostMapping("/{reservationId}")
     ResponseEntity<?> writeReview(@RequestBody @Valid ReviewDto.WriteReviewRequest request,
                                   @PathVariable Long reservationId){
@@ -42,6 +44,7 @@ public class ReviewController {
     }
 
     //리뷰 수정
+    @PreAuthorize("hasRole('USER')")
     @PutMapping("/{reviewId}")
     ResponseEntity<?> updateReview(@RequestBody ReviewDto.WriteReviewRequest request,
                                    @PathVariable Long reviewId){
@@ -51,6 +54,7 @@ public class ReviewController {
     }
 
     //리뷰 삭제
+    @PreAuthorize("hasRole('USER')")
     @DeleteMapping("/{reviewId}")
     ResponseEntity<?> deleteReview(@PathVariable Long reviewId){
         Long memberId = MemberUtil.getMemberId();
@@ -59,6 +63,7 @@ public class ReviewController {
     }
 
     //회원별 리뷰 조회(페이징 처리가 필요함.)
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/user/{pageIndex}")
     ResponseEntity<List<ReviewDto.ReviewResponse>> getReviewsForUser(@PathVariable int pageIndex){
         Long memberId = MemberUtil.getMemberId();

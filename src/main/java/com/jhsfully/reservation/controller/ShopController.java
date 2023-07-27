@@ -6,6 +6,7 @@ import com.jhsfully.reservation.service.ShopService;
 import com.jhsfully.reservation.util.MemberUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -30,6 +31,7 @@ public class ShopController {
     }
 
     //파트너의 매장 정보 목록 조회
+    @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/partner/{pageIndex}")
     public ResponseEntity<?> getShopsByPartner(@PathVariable int pageIndex){
         Long memberId = MemberUtil.getMemberId();
@@ -45,6 +47,7 @@ public class ShopController {
     }
 
     //매장 상세 정보를 파트너에게 제공함.
+    @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/partner/detail/{shopId}")
     public ResponseEntity<?> getShopDetailForPartner(@PathVariable Long shopId){
         Long memberId = MemberUtil.getMemberId();
@@ -53,6 +56,7 @@ public class ShopController {
     }
 
     //매장을 추가함.
+    @PreAuthorize("hasRole('PARTNER')")
     @PostMapping
     public ResponseEntity<?> addShop(@RequestBody @Valid ShopDto.AddShopRequest request){
         Long memberId = MemberUtil.getMemberId();
@@ -61,6 +65,7 @@ public class ShopController {
     }
 
     //매장 정보를 수정함.
+    @PreAuthorize("hasRole('PARTNER')")
     @PutMapping("/{shopId}")
     public ResponseEntity<?> updateShop(@PathVariable Long shopId, @RequestBody @Valid ShopDto.AddShopRequest request){
         Long memberId = MemberUtil.getMemberId();
@@ -69,6 +74,7 @@ public class ShopController {
     }
 
     //매장을 삭제함.
+    @PreAuthorize("hasRole('PARTNER')")
     @DeleteMapping("/{shopId}")
     public ResponseEntity<?> deleteShop(@PathVariable Long shopId){
         Long memberId = MemberUtil.getMemberId();

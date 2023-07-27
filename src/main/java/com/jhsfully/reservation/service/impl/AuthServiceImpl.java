@@ -2,6 +2,7 @@ package com.jhsfully.reservation.service.impl;
 
 import com.jhsfully.reservation.domain.Member;
 import com.jhsfully.reservation.exception.AuthenticationException;
+import com.jhsfully.reservation.exception.RefreshTokenException;
 import com.jhsfully.reservation.model.AuthDto;
 import com.jhsfully.reservation.repository.MemberRepository;
 import com.jhsfully.reservation.security.TokenProvider;
@@ -9,11 +10,12 @@ import com.jhsfully.reservation.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
 
-import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_ALREADY_EXIST;
-import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_LOGIN_FAIL;
+import static com.jhsfully.reservation.type.AuthenticationErrorType.*;
+import static com.jhsfully.reservation.type.RefreshTokenErrorType.REFRESH_TOKEN_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -76,4 +78,22 @@ public class AuthServiceImpl implements AuthService {
 
         return new AuthDto.SignInResponse(member.getName(), accessToken, refreshToken);
     }
+
+    //토큰을 리프레시함.
+    @Override
+    public AuthDto.refreshResponse tokenRefresh(String refreshToken) {
+        String parsedRefreshToken = null;
+        if(!ObjectUtils.isEmpty(refreshToken) && refreshToken.startsWith("Bearer ")){
+            parsedRefreshToken = refreshToken.substring(7);
+        }else{
+            throw new RefreshTokenException(REFRESH_TOKEN_NOT_FOUND);
+        }
+        if(!tokenProvider.validateToken(parsedRefreshToken)){
+            throw new AuthenticationException(AUTHENTICATION_UNAUTHORIZED);
+        }
+        String accessToken = tokenProvider.generateAccessTokenByRefresh(parsedRefreshToken);
+        return new AuthDto.refreshResponse(accessToken);
+    }
+
+
 }

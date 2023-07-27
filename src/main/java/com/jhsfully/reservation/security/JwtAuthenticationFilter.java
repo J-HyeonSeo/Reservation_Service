@@ -21,7 +21,6 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String ACCESS_TOKEN_HEADER = "AccessToken";
-    public static final String REFRESH_TOKEN_HEADER = "RefreshToken";
     public static final String TOKEN_PREFIX = "Bearer ";
     private final TokenProvider tokenProvider;
 
@@ -33,22 +32,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String accessToken = resolveTokenFromRequest(request, ACCESS_TOKEN_HEADER);
-        String refreshToken = resolveTokenFromRequest(request, REFRESH_TOKEN_HEADER);
 
-        try {
-            if (StringUtils.hasText(accessToken) && tokenProvider.validateToken(accessToken)) {
+        if (StringUtils.hasText(accessToken) && tokenProvider.validateToken(accessToken)) {
 
-                Authentication authentication = tokenProvider.getAuthentication(accessToken);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+            Authentication authentication = tokenProvider.getAuthentication(accessToken);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            } else if (StringUtils.hasText(refreshToken) &&
-                    tokenProvider.validateToken(refreshToken)) {
-                String newAccessToken = tokenProvider.generateAccessTokenByRefresh(refreshToken);
-                response.addHeader("accessToken", newAccessToken);
-            }else{
-                throw new RuntimeException();
-            }
-        }catch (Exception e){ //로그인이 필요한 경우임.
+        } else{ //로그인이 필요한 경우임.
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
@@ -69,6 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(requestURI.startsWith("/auth/signin"))return true;
         if(requestURI.startsWith("/auth/user/signup"))return true;
         if(requestURI.startsWith("/auth/partner/signup"))return true;
+        if(requestURI.startsWith("/auth/refresh"))return true;
 
         //for Develop
         if(requestURI.startsWith("/h2-console"))return true;

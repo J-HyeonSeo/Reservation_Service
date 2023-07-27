@@ -6,5 +6,5 @@ public interface AuthService {
 
     void signUp(AuthDto.SignUpRequest request, boolean isPartner);
     AuthDto.SignInResponse signIn(AuthDto.SignInRequest request);
-
+    AuthDto.refreshResponse tokenRefresh(String refreshToken);
 }
