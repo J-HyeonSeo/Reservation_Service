@@ -37,6 +37,7 @@ public class Reservation {
         return ReservationDto.ReservationResponse.builder()
                 .reservationCount(reservationCount)
                 .id(reservation.getId())
+                .memberName(reservation.getMember().getName())
                 .shopName(reservation.getShop().getName())
                 .resDay(reservation.getResDay())
                 .resTime(reservation.getResTime())

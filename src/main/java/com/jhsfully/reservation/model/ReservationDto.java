@@ -47,6 +47,7 @@ public class ReservationDto {
     public static class ReservationResponse{
         private long reservationCount;
         private Long id;
+        private String memberName;
         private String shopName;
         private LocalDate resDay;
         private LocalTime resTime;
