@@ -62,7 +62,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     @Query(
             "SELECT COALESCE(SUM(r.count), 0) FROM reservation r " +
-            "WHERE r.shop = ?1 AND (r.reservationState='ASSIGN' OR r.reservationState='READY' ) AND r.resDay = ?2 AND r.resTime = ?3 "
+            "WHERE r.shop = ?1 AND (r.reservationState='ASSIGN' OR r.reservationState='READY' OR r.reservationState='VISITED') AND r.resDay = ?2 AND r.resTime = ?3 "
     )
     Integer getReservationCountWithShopAndTime(Shop shop, LocalDate day, LocalTime time);
 

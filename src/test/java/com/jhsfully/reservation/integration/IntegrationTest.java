@@ -1,8 +1,10 @@
 package com.jhsfully.reservation.integration;
 
 import com.jhsfully.reservation.exception.ReservationException;
+import com.jhsfully.reservation.exception.ReviewException;
 import com.jhsfully.reservation.facade.ReviewFacade;
 import com.jhsfully.reservation.model.ReservationDto;
+import com.jhsfully.reservation.model.ReviewDto;
 import com.jhsfully.reservation.model.ShopDto;
 import com.jhsfully.reservation.service.ReservationService;
 import com.jhsfully.reservation.service.ReviewService;
@@ -22,12 +24,14 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static com.jhsfully.reservation.type.ReservationErrorType.*;
+import static com.jhsfully.reservation.type.ReviewErrorType.REVIEW_TIME_OVER;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
-    ####################### 통합 예외 테스트 ############################
+    ####################### 통합 테스트 ############################
 
     데이터베이스 : H2 DATABASE, REDIS
 
@@ -54,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
     - 7/29 AM9, 4명 예약 성공 (예약 신청 기준일 7/15, memberId : 2L)
     - 파트너가 7/29일 4명 예약을 승인함(승인 기준일 7/28)
 
-    시나리오 3 - 방문 프로세스
+    시나리오 3 - 방문 - 리뷰 프로세스
     - 7/16일 방문
     - 7/20일 리뷰작성 (별점 3개)
     - 7/29일 오전 8시 49분에 방문 조회함 (memberId : 2L) - 시간 이전이므로 조회 결과 X
@@ -366,6 +370,195 @@ public class IntegrationTest {
                     1L,
                     4L,
                     LocalDate.of(2023,7,28)
+            );
+        }
+    }
+
+
+    @Nested
+    @Order(3)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    @DisplayName("[시나리오3] - 방문 -> 리뷰 프로세스")
+    class ScenarioThreeVisitAndReviewProcess{
+
+        @Test
+        @Order(1)
+        @Rollback(value = false)
+        @DisplayName("3L이 7/16 오전 8시 59분에 1명 방문")
+        void VisitSuccess_3L_0716_9(){
+            //방문은 키오스크에서 하므로, 매장 주인인 1L로 로그인되어야함.
+            reservationService.visitReservation(1L, 2L,
+                        LocalDate.of(2023, 7, 16),
+                        LocalTime.of(8, 59)
+                    );
+        }
+
+        @Test
+        @Order(2)
+        @Rollback(value = false)
+        @DisplayName("3L이 7/16에 방문한 리뷰를 7/20에 작성 성공.")
+        void ReviewSuccess_3L_0716_0720(){
+            reviewFacade.writeReviewAndAddShopStar(
+                    ReviewDto.WriteReviewRequest.builder()
+                            .star(3)
+                            .content("평균")
+                            .build(),
+                    3L,
+                    2L,
+                    LocalDate.of(2023, 7, 20)
+            );
+        }
+
+        @Test
+        @Order(3)
+        @DisplayName("2L이 7/29일 오전 8:49에 방문 조회함 - 시간 범위 밖임.")
+        void getReservationForVisitFail_2L_0729(){
+            //when
+            ReservationException exception = assertThrows(ReservationException.class,
+                    () -> reservationService
+                            .getReservationForVisit(1L, 1L,
+                                    new ReservationDto.GetReservationParam("010-2222-2222"),
+                                    LocalDate.of(2023, 7, 29),
+                                    LocalTime.of(8, 49)
+                            ));
+
+            //then
+            assertEquals(RESERVATION_CANNOT_VISIT_TIME_OVER, exception.getReservationErrorType());
+        }
+
+        @Test
+        @Order(4)
+        @DisplayName("2L이 7/29일 오전 8:51에 방문 조회함")
+        void getReservationForVisitSuccess_2L_0729(){
+            //when
+            ReservationDto.ReservationResponse reservation = reservationService
+                    .getReservationForVisit(1L, 1L,
+                            new ReservationDto.GetReservationParam("010-2222-2222"),
+                            LocalDate.of(2023, 7, 29),
+                            LocalTime.of(8, 51)
+                    );
+            //then
+            assertAll(
+                    () -> assertEquals("alice", reservation.getMemberName()),
+                    () -> assertEquals(LocalTime.of(9, 0), reservation.getResTime()),
+                    () -> assertEquals(4, reservation.getCount())
+            );
+        }
+
+
+        @Test
+        @Order(5)
+        @Rollback(value = false)
+        @DisplayName("2L이 7/29 오전 8시 55분에 4명 방문")
+        void VisitSuccess_2L_0729_9(){
+            //방문은 키오스크에서 하므로, 매장 주인인 1L로 로그인되어야함.
+            reservationService.visitReservation(1L, 4L,
+                    LocalDate.of(2023, 7, 29),
+                    LocalTime.of(8, 55)
+            );
+        }
+
+        @Test
+        @Order(6)
+        @DisplayName("2L이 8/6에 리뷰 작성 실패 - 작성 기한 초과")
+        void reviewFail2L_0806(){
+            //when
+            ReviewException exception = assertThrows(ReviewException.class,
+                    () ->
+            reviewFacade.writeReviewAndAddShopStar(
+                    ReviewDto.WriteReviewRequest.builder()
+                            .star(4)
+                            .content("good")
+                            .build(),
+                    2L,
+                    4L,
+                    LocalDate.of(2023, 8, 6)
+            ));
+            //then
+            assertEquals(REVIEW_TIME_OVER, exception.getReviewErrorType());
+        }
+
+        @Test
+        @Order(7)
+        @Rollback(value = false)
+        @DisplayName("2L이 8/5에 리뷰 작성 성공")
+        void reviewSuccess2L_0805(){
+            //when
+            reviewFacade.writeReviewAndAddShopStar(
+                    ReviewDto.WriteReviewRequest.builder()
+                            .star(4)
+                            .content("good")
+                            .build(),
+                    2L,
+                    4L,
+                    LocalDate.of(2023, 8, 5)
+            );
+        }
+
+        @Test
+        @Order(8)
+        @DisplayName("2L 8/5에 작성한 리뷰에 대한 예약을 삭제하려고함 - 실패")
+        void deleteReservationForReviewed_2L_0805(){
+            //when
+            ReservationException exception = assertThrows(ReservationException.class,
+                    () -> reservationService.deleteReservation(2L, 4L));
+            //then
+            assertEquals(RESERVATION_CANNOT_DELETE, exception.getReservationErrorType());
+        }
+    }
+
+
+    @Nested
+    @Order(4)
+    @DisplayName("[시나리오4] - 유저가 매장 데이터 조회하기")
+    class ScenarioThreeFourGetShopData{
+//            - 7/15일에 예약 데이터를 조회함, 7/16일, 7/29일 예약 가능 카운트가 다름.
+//    - 별점이 3.5개인지 확인.
+        @Test
+        @DisplayName("7/15 에 매장 예약 데이터 조회함.")
+        void getShopData_0715(){
+            //when
+            ShopDto.ShopDetailUserResponse response = shopService
+                    .getShopDetailForUser(1L,
+                            LocalDate.of(2023, 7, 15));
+
+            assertAll(
+                    () -> assertEquals(1L, response.getId()),
+                    () -> assertEquals("헤어샵", response.getName()),
+                    () -> assertEquals("소개", response.getIntroduce()),
+                    () -> assertEquals("주소", response.getAddress()),
+                    () -> assertEquals(3.5, response.getStar()),
+                    () -> assertEquals(LocalDate.of(2023,7, 16), response.getResOpenDateTimes().get(0).getDate()),
+                    () -> assertEquals(LocalTime.of(9, 0), response.getResOpenDateTimes().get(0).getReservationTimeSets().get(0).getTime()),
+                    () -> assertEquals(1, response.getResOpenDateTimes().get(0).getReservationTimeSets().get(0).getCount())
+            );
+        }
+    }
+
+
+    @Nested
+    @Order(5)
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    @DisplayName("[시나리오5] - 리뷰 삭제 및 별점 차감 확인")
+    class ScenarioThreeFiveReviewDelete{
+
+        @Test
+        @Order(1)
+        @DisplayName("2L이 8/5일에 작성한 리뷰를 삭제함.")
+        void deleteReview_2L(){
+            //when
+            reviewFacade.deleteReviewAndSubShopStar(2L, 2L);
+        }
+
+        @Test
+        @Order(2)
+        @DisplayName("파트너가 별점 조회해본다.")
+        void getShopDataForStar(){
+            //when
+            List<ShopDto.ShopTopResponse> responses = shopService.getShopsByPartner(1L, 0);
+            //then
+            assertAll(
+                    () -> assertEquals(3, responses.get(0).getStar())
             );
         }
     }
