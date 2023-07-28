@@ -22,7 +22,7 @@ public class ShopController {
 
     //사용자가 검색해서 조회하는 매장 정보 목록 조회
     @GetMapping("/user/{pageIndex}")
-    public ResponseEntity<?> searchShops(@PathVariable int pageIndex, @ModelAttribute ShopDto.SearchShopParam param){
+    public ResponseEntity<List<ShopTopResponseInterface>> searchShops(@PathVariable int pageIndex, @ModelAttribute ShopDto.SearchShopParam param){
         if(param.getSearchValue() == null){
             param.setSearchValue("");
         }
@@ -33,7 +33,7 @@ public class ShopController {
     //파트너의 매장 정보 목록 조회
     @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/partner/{pageIndex}")
-    public ResponseEntity<?> getShopsByPartner(@PathVariable int pageIndex){
+    public ResponseEntity<List<ShopDto.ShopTopResponse>> getShopsByPartner(@PathVariable int pageIndex){
         Long memberId = MemberUtil.getMemberId();
         List<ShopDto.ShopTopResponse> responses = shopService.getShopsByPartner(memberId, pageIndex);
         return ResponseEntity.ok(responses);
@@ -49,7 +49,7 @@ public class ShopController {
     //매장 상세 정보를 파트너에게 제공함.
     @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/partner/detail/{shopId}")
-    public ResponseEntity<?> getShopDetailForPartner(@PathVariable Long shopId){
+    public ResponseEntity<ShopDto.ShopDetailPartnerResponse> getShopDetailForPartner(@PathVariable Long shopId){
         Long memberId = MemberUtil.getMemberId();
         ShopDto.ShopDetailPartnerResponse response = shopService.getShopDetailForPartner(memberId, shopId);
         return ResponseEntity.ok(response);

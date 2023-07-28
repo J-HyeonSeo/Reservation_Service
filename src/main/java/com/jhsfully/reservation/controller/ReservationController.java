@@ -50,7 +50,7 @@ public class ReservationController {
     //유저 예약 조회(예약 승인/거절 상태 표시) -> 내용이 간단하므로 상세조회는 구현하지 않음.
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/user/{pageIndex}")
-    public ResponseEntity<?> getReservationsForUser(@PathVariable int pageIndex, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
+    public ResponseEntity<List<ReservationDto.ReservationResponse>> getReservationsForUser(@PathVariable int pageIndex, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
         List<ReservationDto.ReservationResponse> responses = reservationService.getReservationForUser(memberId, startDate, pageIndex);
         return ResponseEntity.ok(responses);
@@ -60,7 +60,7 @@ public class ReservationController {
     //매장 예약 조회(파트너)
     @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/partner/{shopId}/{pageIndex}")
-    public ResponseEntity<?> getReservationsByShop(@PathVariable Long shopId, @PathVariable int pageIndex, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
+    public ResponseEntity<List<ReservationDto.ReservationResponse>> getReservationsByShop(@PathVariable Long shopId, @PathVariable int pageIndex, @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate){
         Long memberId = MemberUtil.getMemberId();
         List<ReservationDto.ReservationResponse> responses = reservationService.getReservationByShop(memberId, shopId, startDate, pageIndex);
         return ResponseEntity.ok(responses);
@@ -88,7 +88,7 @@ public class ReservationController {
     //키오스크는 기본적으로 파트너의 계정으로 로그인되어 있다고 가정함.
     @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/kiosk/{shopId}")
-    public ResponseEntity<?> getReservationForVisit(@PathVariable Long shopId, @ModelAttribute @Valid ReservationDto.GetReservationParam param){
+    public ResponseEntity<ReservationDto.ReservationResponse> getReservationForVisit(@PathVariable Long shopId, @ModelAttribute @Valid ReservationDto.GetReservationParam param){
         Long memberId = MemberUtil.getMemberId();
         ReservationDto.ReservationResponse response = reservationService.getReservationForVisit(memberId, shopId, param, LocalDate.now(), LocalTime.now());
         return ResponseEntity.ok(response);
