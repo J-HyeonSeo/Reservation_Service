@@ -14,6 +14,8 @@
 
 ## ERD 모델링
 
+![매장 예약 서비스 ERD](https://github.com/J-HyeonSeo/reservation_service/assets/47245112/cba40448-e64f-4c8f-9963-885944e2f6c1)
+
 ## 인증
 
 - 인증은 Json Web Token을 사용하였습니다.
