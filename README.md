@@ -14,7 +14,7 @@
 
 ## ERD 모델링
 
-![매장 예약 서비스 ERD](https://github.com/J-HyeonSeo/reservation_service/assets/47245112/cba40448-e64f-4c8f-9963-885944e2f6c1)
+![image](https://github.com/J-HyeonSeo/reservation_service/assets/47245112/300946aa-6079-437d-8127-e20cbbbc3703)
 
 ## 인증
 
