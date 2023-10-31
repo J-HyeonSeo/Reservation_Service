@@ -1,34 +1,48 @@
 package com.jhsfully.reservation.integration;
 
+import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_CANNOT_ALLOW_GREEDY_USER;
+import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_CANNOT_DELETE;
+import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_CANNOT_VISIT_TIME_OVER;
+import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_IS_OVERFLOW;
+import static com.jhsfully.reservation.type.ReservationErrorType.RESERVATION_NOT_OPENED_DAY;
+import static com.jhsfully.reservation.type.ReviewErrorType.REVIEW_TIME_OVER;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.jhsfully.reservation.exception.ReservationException;
 import com.jhsfully.reservation.exception.ReviewException;
 import com.jhsfully.reservation.facade.ReviewFacade;
 import com.jhsfully.reservation.model.ReservationDto;
 import com.jhsfully.reservation.model.ReviewDto;
 import com.jhsfully.reservation.model.ShopDto;
+import com.jhsfully.reservation.model.ShopTopResponse;
 import com.jhsfully.reservation.service.ReservationService;
 import com.jhsfully.reservation.service.ReviewService;
 import com.jhsfully.reservation.service.ShopService;
 import com.jhsfully.reservation.type.Days;
-import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.datasource.init.ScriptUtils;
-import org.springframework.test.annotation.Rollback;
-import org.springframework.transaction.annotation.Transactional;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-
-import static com.jhsfully.reservation.type.ReservationErrorType.*;
-import static com.jhsfully.reservation.type.ReviewErrorType.REVIEW_TIME_OVER;
-import static org.junit.jupiter.api.Assertions.*;
+import javax.sql.DataSource;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.domain.Page;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
+import org.springframework.test.annotation.Rollback;
+import org.springframework.transaction.annotation.Transactional;
 
 /*
     ####################### 통합 테스트 ############################
@@ -555,10 +569,10 @@ public class IntegrationTest {
         @DisplayName("파트너가 별점 조회해본다.")
         void getShopDataForStar(){
             //when
-            List<ShopDto.ShopTopResponse> responses = shopService.getShopsByPartner(1L, 0);
+            Page<ShopTopResponse> responses = shopService.getShopsByPartner(1L, 0);
             //then
             assertAll(
-                    () -> assertEquals(3, responses.get(0).getStar())
+                    () -> assertEquals(3, responses.getContent().get(0).getStar())
             );
         }
     }

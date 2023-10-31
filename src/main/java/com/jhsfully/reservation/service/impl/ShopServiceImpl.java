@@ -1,24 +1,21 @@
 package com.jhsfully.reservation.service.impl;
 
+import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
+import static com.jhsfully.reservation.type.ShopErrorType.SHOP_IS_DELETED;
+import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_FOUND;
+import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_MATCH_USER;
+
 import com.jhsfully.reservation.domain.Member;
 import com.jhsfully.reservation.domain.Shop;
 import com.jhsfully.reservation.exception.AuthenticationException;
 import com.jhsfully.reservation.exception.ShopException;
 import com.jhsfully.reservation.lock.RedisLock;
 import com.jhsfully.reservation.model.ShopDto;
-import com.jhsfully.reservation.model.ShopTopResponseInterface;
+import com.jhsfully.reservation.model.ShopTopResponse;
 import com.jhsfully.reservation.repository.MemberRepository;
 import com.jhsfully.reservation.repository.ReservationRepository;
 import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.ShopService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,10 +23,13 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-
-import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
-import static com.jhsfully.reservation.type.ShopErrorType.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -144,53 +144,15 @@ public class ShopServiceImpl implements ShopService {
         pageIndex를 사용하여, 10개씩 잘라서 응답하도록함.
      */
     @Override
-    public List<ShopTopResponseInterface> searchShops(ShopDto.SearchShopParam param, int pageIndex) {
+    public Page<ShopTopResponse> searchShops(ShopDto.SearchShopParam param, int pageIndex) {
 
-        //비효율적인 기존 방식 일단 보류
-//        List<Shop> shopList = shopRepository.findByNameStartingWith(param.getSearchValue());
-//
-//
-//        List<ShopDto.ShopTopResponse> shopTopResponses = shopList.stream()
-//                .map(x -> Shop.toTopResponse(x, param.getLatitude(), param.getLongitude()))
-//                .collect(Collectors.toList());
-//
-//        switch (param.getSortingType()){
-//            case TEXT:
-//                Collections.sort(shopTopResponses,
-//                        param.isAscending() ?
-//                            Comparator.comparing(ShopDto.ShopTopResponse::getName) :
-//                                Comparator.comparing(ShopDto.ShopTopResponse::getName, Comparator.reverseOrder())
-//                );
-//                break;
-//            case STAR:
-//                Collections.sort(shopTopResponses,
-//                        param.isAscending() ?
-//                                Comparator.comparing(ShopDto.ShopTopResponse::getStar) :
-//                                Comparator.comparing(ShopDto.ShopTopResponse::getStar, Comparator.reverseOrder())
-//                );
-//                break;
-//            case DISTANCE:
-//                Collections.sort(shopTopResponses,
-//                        param.isAscending() ?
-//                                Comparator.comparing(ShopDto.ShopTopResponse::getDistance) :
-//                                Comparator.comparing(ShopDto.ShopTopResponse::getDistance, Comparator.reverseOrder())
-//                );
-//                break;
-//        }
-
-        /*
-            쿼리문으로 searchValue로 시작하는 데이터를 검색하고,
-            sortingType에 해당되는, 값을 기준으로 isAsc 기준에 맞게 정렬을 수행하고,
-            이를 pageIndex로 페이징처리해서 반환함.
-            nativeQuery를 수행하였기에, 반환값이 (interface)타입이 됨.
-         */
         return shopRepository.findByNameAndOrdering(
                 param.getSearchValue() + "%", //like 문을 사용하기 위한 % 전방 문자 탐색을 수행함 (INDEX을 사용하기 위함)
                 param.getLatitude(),
                 param.getLongitude(),
-                param.getSortingType().name(),
+                param.getSortingType(),
                 param.isAscending(),
-                pageIndex * 10L, 10);
+                PageRequest.of(pageIndex, 10));
     }
 
     /*
@@ -198,7 +160,7 @@ public class ShopServiceImpl implements ShopService {
         memberId를 가져와서, 해당되는 memberId가 소유한 shop들을 반환하도록 함.
      */
     @Override
-    public List<ShopDto.ShopTopResponse> getShopsByPartner(Long memberId, int pageIndex) {
+    public Page<ShopTopResponse> getShopsByPartner(Long memberId, int pageIndex) {
 
         //검증
         Member member = memberRepository.findById(memberId)
@@ -206,9 +168,7 @@ public class ShopServiceImpl implements ShopService {
 
         Page<Shop> shopList = shopRepository.findByMemberAndIsDeletedFalse(member, PageRequest.of(pageIndex, 10));
 
-        return shopList.getContent().stream()
-                .map(Shop::toTopResponse)
-                .collect(Collectors.toList());
+        return shopList.map(Shop::toTopResponse);
     }
 
     /*

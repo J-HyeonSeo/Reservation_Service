@@ -1,17 +1,24 @@
 package com.jhsfully.reservation.controller;
 
 import com.jhsfully.reservation.model.ShopDto;
-import com.jhsfully.reservation.model.ShopTopResponseInterface;
+import com.jhsfully.reservation.model.ShopTopResponse;
 import com.jhsfully.reservation.service.ShopService;
 import com.jhsfully.reservation.util.MemberUtil;
+import java.time.LocalDate;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
-import java.time.LocalDate;
-import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,21 +29,19 @@ public class ShopController {
 
     //사용자가 검색해서 조회하는 매장 정보 목록 조회
     @GetMapping("/user/{pageIndex}")
-    public ResponseEntity<List<ShopTopResponseInterface>> searchShops(@PathVariable int pageIndex, @ModelAttribute ShopDto.SearchShopParam param){
+    public ResponseEntity<Page<ShopTopResponse>> searchShops(@PathVariable int pageIndex, @ModelAttribute ShopDto.SearchShopParam param){
         if(param.getSearchValue() == null){
             param.setSearchValue("");
         }
-        List<ShopTopResponseInterface> responses = shopService.searchShops(param, pageIndex);
-        return ResponseEntity.ok(responses);
+        return ResponseEntity.ok(shopService.searchShops(param, pageIndex));
     }
 
     //파트너의 매장 정보 목록 조회
     @PreAuthorize("hasRole('PARTNER')")
     @GetMapping("/partner/{pageIndex}")
-    public ResponseEntity<List<ShopDto.ShopTopResponse>> getShopsByPartner(@PathVariable int pageIndex){
+    public ResponseEntity<Page<ShopTopResponse>> getShopsByPartner(@PathVariable int pageIndex){
         Long memberId = MemberUtil.getMemberId();
-        List<ShopDto.ShopTopResponse> responses = shopService.getShopsByPartner(memberId, pageIndex);
-        return ResponseEntity.ok(responses);
+        return ResponseEntity.ok(shopService.getShopsByPartner(memberId, pageIndex));
     }
 
     //매장 상세 정보를 유저에게 제공함.(Reservation기능이 만들어져야 이어서 구현가능함)
