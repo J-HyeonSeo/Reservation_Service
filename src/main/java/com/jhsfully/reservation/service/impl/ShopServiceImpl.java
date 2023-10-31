@@ -27,9 +27,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -280,11 +277,8 @@ public class ShopServiceImpl implements ShopService {
     /*
         add, update, sub 3종류의 함수가 사용되며,
         동시성 이슈를 고려하고자, Redis Locking을 사용하여, 수정중이면 제한이 걸린다.
-        또한, 자식 트랜잭션을 별도로 새로 생성하여, 성공시 바로 DB에 커밋될 수 있게 구성함.
      */
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW,
-            isolation = Isolation.READ_COMMITTED)
     @RedisLock(group = "review-shop", key = "shopId")
     public void addShopStar(Long shopId, int star){
         Shop shop = shopRepository.findById(shopId)
@@ -294,8 +288,6 @@ public class ShopServiceImpl implements ShopService {
         shopRepository.save(shop);
     }
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW,
-            isolation = Isolation.READ_COMMITTED)
     @RedisLock(group = "review-shop", key = "shopId")
     public void subShopStar(Long shopId, int star){
         Shop shop = shopRepository.findById(shopId)
@@ -306,8 +298,6 @@ public class ShopServiceImpl implements ShopService {
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW,
-            isolation = Isolation.READ_COMMITTED)
     @RedisLock(group = "review-shop", key = "shopId")
     public void updateShopStar(Long shopId, int originStar, int newStar){
         Shop shop = shopRepository.findById(shopId)

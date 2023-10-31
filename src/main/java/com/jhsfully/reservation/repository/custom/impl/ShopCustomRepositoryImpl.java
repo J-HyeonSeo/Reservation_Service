@@ -46,7 +46,7 @@ public class ShopCustomRepositoryImpl implements ShopCustomRepository {
     //거리 계산을 위한 NativeQuery
     Expression<Double> distanceExpression = Expressions
         .numberTemplate(Double.class,
-            "ST_DISTANCE_SPHERE(point({0}, {1}), point({2}, {3}))",
+            "ST_Distance_Sphere(point({0}, {1}), point({2}, {3}))",
             shop.longitude, shop.latitude, longitude, latitude).as("distance");
 
     List<ShopTopResponse> responseList = jpaQueryFactory.select(Projections.constructor(ShopTopResponse.class,
