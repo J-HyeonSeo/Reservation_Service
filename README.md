@@ -154,6 +154,7 @@
 |:------------------:|:---:|:--------------------------------:|
 |     SpringBoot     |2.7.13|              웹프레임워크              |
 |      data-jpa      |2.7.13|               ORM                |
+|     QueryDsl       |5.0.0 |     복잡한 쿼리문을 자바코드로 작성         |
 |     data-redis     |2.7.13|      Redis-connector-driver      |
 |      security      |2.7.13|                인증                |
 |     validation     |2.7.13|            입력 데이터 검증             |
