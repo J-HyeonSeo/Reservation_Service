@@ -1,13 +1,26 @@
 package com.jhsfully.reservation.domain;
 
-import com.jhsfully.reservation.model.ShopDto;
+import com.jhsfully.reservation.model.ShopTopResponse;
 import com.jhsfully.reservation.type.Days;
-import lombok.*;
-
-import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import javax.persistence.CollectionTable;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -73,12 +86,13 @@ public class Shop {
         this.star = this.starSum / (double)this.reviewCount;
     }
 
-    public static ShopDto.ShopTopResponse toTopResponse(Shop shop){
+    public static ShopTopResponse toTopResponse(Shop shop){
 
-        return ShopDto.ShopTopResponse.builder()
+        return ShopTopResponse.builder()
                 .id(shop.getId())
                 .name(shop.getName())
                 .introduce(shop.getIntroduce())
+                .distance(0)
                 .address(shop.getAddress())
                 .star(shop.getStar())
                 .build();

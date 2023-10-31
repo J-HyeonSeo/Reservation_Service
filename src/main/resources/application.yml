@@ -11,12 +11,14 @@ spring:
       ddl-auto: update
     show-sql: true
     database: mysql
-    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    properties:
+      hibernate:
+        dialect: com.jhsfully.reservation.dialect.MySQLCustomDialect
 
   datasource:
     url: jdbc:mysql://localhost:3306/reservation?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
-    username: Enter Your MySQL Username.
-    password: Enter Your MySQL Password.
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
 
 
 #  H2 DATABASE SETTINGS

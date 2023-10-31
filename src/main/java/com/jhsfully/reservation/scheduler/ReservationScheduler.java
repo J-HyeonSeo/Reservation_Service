@@ -37,35 +37,8 @@ public class ReservationScheduler {
     public void setReservationsState(){
 
         //쿼리에게 책임 위임.
-        reservationRepository.updateReservationState(LocalDate.now(), LocalDate.now().minusDays(1));
+        reservationRepository.updateReservationState(LocalDate.now());
 
-        //기존 방식
-//        int nowPage = 0;
-//        LocalDate now = LocalDate.now();
-//
-//        List<ReservationState> states = new ArrayList<>(Arrays.asList(ReservationState.ASSIGN, ReservationState.READY));
-//
-//        while(true){
-//            Page<Reservation> reservations = reservationRepository.findByReservationStateIn(states, PageRequest.of(nowPage++, 200));
-//
-//            for(Reservation reservation : reservations.getContent()){
-//                if(reservation.getReservationState() == ReservationState.ASSIGN){
-//                    if(reservation.getResDay().plusDays(1).equals(now)){
-//                        reservation.setReservationState(ReservationState.REJECT);
-//                    }
-//                }else if(reservation.getReservationState() == ReservationState.READY){
-//                    if(reservation.getResDay().equals(now)){
-//                        reservation.setReservationState(ReservationState.EXPIRED);
-//                    }
-//                }else{
-//                    continue;
-//                }
-//                reservationRepository.save(reservation);
-//            }
-//            if(!reservations.hasNext()){
-//                break;
-//            }
-//        }
     }
 
 }

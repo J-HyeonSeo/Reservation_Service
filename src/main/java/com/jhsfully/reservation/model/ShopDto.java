@@ -64,20 +64,6 @@ public class ShopDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class ShopTopResponse{
-
-        private Long id;
-        private String name;
-        private String introduce;
-        private String address;
-        private double star;
-
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
     public static class ShopDetailUserResponse{
         private Long id;
         private String name;

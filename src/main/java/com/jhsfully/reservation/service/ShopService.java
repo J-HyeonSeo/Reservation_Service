@@ -1,10 +1,9 @@
 package com.jhsfully.reservation.service;
 
 import com.jhsfully.reservation.model.ShopDto;
-import com.jhsfully.reservation.model.ShopTopResponseInterface;
-
+import com.jhsfully.reservation.model.ShopTopResponse;
 import java.time.LocalDate;
-import java.util.List;
+import org.springframework.data.domain.Page;
 
 public interface ShopService {
 
@@ -14,9 +13,9 @@ public interface ShopService {
 
     void deleteShop(Long memberId, Long shopId);
 
-    List<ShopTopResponseInterface> searchShops(ShopDto.SearchShopParam param, int pageIndex);
+    Page<ShopTopResponse> searchShops(ShopDto.SearchShopParam param, int pageIndex);
 
-    List<ShopDto.ShopTopResponse> getShopsByPartner(Long memberId, int pageIndex);
+    Page<ShopTopResponse> getShopsByPartner(Long memberId, int pageIndex);
 
     ShopDto.ShopDetailPartnerResponse getShopDetailForPartner(Long memberId, Long shopId);
 

@@ -1,27 +1,34 @@
 package com.jhsfully.reservation.unit.service;
 
+import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
+import static com.jhsfully.reservation.type.ShopErrorType.SHOP_IS_DELETED;
+import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_FOUND;
+import static com.jhsfully.reservation.type.ShopErrorType.SHOP_NOT_MATCH_USER;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.jhsfully.reservation.domain.Member;
 import com.jhsfully.reservation.domain.Shop;
 import com.jhsfully.reservation.exception.AuthenticationException;
 import com.jhsfully.reservation.exception.ShopException;
 import com.jhsfully.reservation.model.ShopDto;
-import com.jhsfully.reservation.model.ShopTopResponseInterface;
+import com.jhsfully.reservation.model.ShopTopResponse;
 import com.jhsfully.reservation.repository.MemberRepository;
 import com.jhsfully.reservation.repository.ReservationRepository;
 import com.jhsfully.reservation.repository.ShopRepository;
 import com.jhsfully.reservation.service.impl.ShopServiceImpl;
 import com.jhsfully.reservation.type.Days;
 import com.jhsfully.reservation.type.SortingType;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,13 +36,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
-import static com.jhsfully.reservation.type.AuthenticationErrorType.AUTHENTICATION_USER_NOT_FOUND;
-import static com.jhsfully.reservation.type.ShopErrorType.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 /*
     Mockito를 사용하여, Unit테스트를 진행함.
@@ -218,52 +230,24 @@ class ShopServiceTest {
     void searchShopsSuccess(){
 
         //given
-        given(shopRepository.findByNameAndOrdering(anyString(), anyDouble(), anyDouble(), anyString(), anyBoolean(), anyLong(), anyLong()))
+        given(shopRepository.findByNameAndOrdering(anyString(), anyDouble(), anyDouble(), any(), anyBoolean(), any()))
                 .willReturn(
-                        new ArrayList<>(
+                        new PageImpl<>(
                                 List.of(
-                                        new ShopTopResponseInterface() {
-                                            @Override
-                                            public long getShopCount() {
-                                                return 1;
-                                            }
-
-                                            @Override
-                                            public Long getId() {
-                                                return 1L;
-                                            }
-
-                                            @Override
-                                            public String getName() {
-                                                return "name";
-                                            }
-
-                                            @Override
-                                            public String getIntroduce() {
-                                                return "introduce";
-                                            }
-
-                                            @Override
-                                            public String getAddress() {
-                                                return "address";
-                                            }
-
-                                            @Override
-                                            public double getDistance() {
-                                                return 2000;
-                                            }
-
-                                            @Override
-                                            public double getStar() {
-                                                return 0;
-                                            }
-                                        }
+                                    ShopTopResponse.builder()
+                                        .id(1L)
+                                        .name("name")
+                                        .introduce("introduce")
+                                        .address("address")
+                                        .distance(2000)
+                                        .star(0)
+                                        .build()
                                 )
                         )
                 );
 
         //when
-        List<ShopTopResponseInterface> results = shopService.searchShops(ShopDto.SearchShopParam.builder()
+        Page<ShopTopResponse> results = shopService.searchShops(ShopDto.SearchShopParam.builder()
                 .isAscending(true)
                 .searchValue("")
                 .latitude(38.0)
@@ -273,14 +257,13 @@ class ShopServiceTest {
 
         //then
         assertAll(
-                () -> assertEquals(1, results.size()),
-                () -> assertEquals(1, results.get(0).getShopCount()),
-                () -> assertEquals(1L, results.get(0).getId()),
-                () -> assertEquals("name", results.get(0).getName()),
-                () -> assertEquals("introduce", results.get(0).getIntroduce()),
-                () -> assertEquals("address", results.get(0).getAddress()),
-                () -> assertEquals(2000, results.get(0).getDistance()),
-                () -> assertEquals(0, results.get(0).getStar())
+                () -> assertEquals(1, results.getContent().size()),
+                () -> assertEquals(1L, results.getContent().get(0).getId()),
+                () -> assertEquals("name", results.getContent().get(0).getName()),
+                () -> assertEquals("introduce", results.getContent().get(0).getIntroduce()),
+                () -> assertEquals("address", results.getContent().get(0).getAddress()),
+                () -> assertEquals(2000, results.getContent().get(0).getDistance()),
+                () -> assertEquals(0, results.getContent().get(0).getStar())
         );
     }
 
@@ -303,16 +286,16 @@ class ShopServiceTest {
                                 .build()
                 )), PageRequest.of(0, 10), 1));
         //when
-        List<ShopDto.ShopTopResponse> shops = shopService.getShopsByPartner(2L, 0);
+        Page<ShopTopResponse> shops = shopService.getShopsByPartner(2L, 0);
 
         //then
         assertAll(
-                () -> assertEquals(1, shops.size()),
-                () -> assertEquals(2L, shops.get(0).getId()),
-                () -> assertEquals("미용실", shops.get(0).getName()),
-                () -> assertEquals("싹둑", shops.get(0).getIntroduce()),
-                () -> assertEquals("서울", shops.get(0).getAddress()),
-                () -> assertEquals(0, shops.get(0).getStar())
+                () -> assertEquals(1, shops.getContent().size()),
+                () -> assertEquals(2L, shops.getContent().get(0).getId()),
+                () -> assertEquals("미용실", shops.getContent().get(0).getName()),
+                () -> assertEquals("싹둑", shops.getContent().get(0).getIntroduce()),
+                () -> assertEquals("서울", shops.getContent().get(0).getAddress()),
+                () -> assertEquals(0, shops.getContent().get(0).getStar())
         );
     }
 

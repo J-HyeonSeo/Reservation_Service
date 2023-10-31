@@ -4,12 +4,10 @@ import com.jhsfully.reservation.model.ReviewDto;
 import com.jhsfully.reservation.service.ReservationService;
 import com.jhsfully.reservation.service.ReviewService;
 import com.jhsfully.reservation.service.ShopService;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
 
 /*
     분산환경을 고려하여, 격리 수준을 커밋된 데이터를 가져오는 것으로 설정함.
@@ -19,7 +17,7 @@ import java.time.LocalDate;
  */
 
 @Component
-@Transactional(isolation = Isolation.READ_COMMITTED) //중간에 하나라도 실패하면, 롤백되어야함.
+@Transactional
 @RequiredArgsConstructor
 public class ReviewFacade {
 

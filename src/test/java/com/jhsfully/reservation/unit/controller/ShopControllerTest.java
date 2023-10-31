@@ -1,13 +1,34 @@
 package com.jhsfully.reservation.unit.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jhsfully.reservation.config.SecurityConfiguration;
 import com.jhsfully.reservation.controller.ShopController;
 import com.jhsfully.reservation.model.ShopDto;
-import com.jhsfully.reservation.model.ShopTopResponseInterface;
+import com.jhsfully.reservation.model.ShopTopResponse;
 import com.jhsfully.reservation.security.JwtAuthenticationFilter;
 import com.jhsfully.reservation.service.ShopService;
 import com.jhsfully.reservation.type.Days;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,25 +36,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(value = ShopController.class, excludeFilters =
     @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {
@@ -58,58 +64,29 @@ public class ShopControllerTest {
         //given
         given(shopService.searchShops(any(), anyInt()))
                 .willReturn(
-                        new ArrayList<>(
-                                Arrays.asList(
-                                        new ShopTopResponseInterface() {
-                                            @Override
-                                            public long getShopCount() {
-                                                return 1;
-                                            }
-
-                                            @Override
-                                            public Long getId() {
-                                                return 1L;
-                                            }
-
-                                            @Override
-                                            public String getName() {
-                                                return "name";
-                                            }
-
-                                            @Override
-                                            public String getIntroduce() {
-                                                return "introduce";
-                                            }
-
-                                            @Override
-                                            public String getAddress() {
-                                                return "address";
-                                            }
-
-                                            @Override
-                                            public double getDistance() {
-                                                return 372000;
-                                            }
-
-                                            @Override
-                                            public double getStar() {
-                                                return 5;
-                                            }
-                                        }
+                        new PageImpl<>(
+                            List.of(
+                                ShopTopResponse.builder()
+                                    .id(1L)
+                                    .name("name")
+                                    .introduce("introduce")
+                                    .address("address")
+                                    .distance(372000)
+                                    .star(5)
+                                    .build())
                                 )
-                        )
-                );
+                        );
+
         //when & then
         mockMvc.perform(get("/shop/user/0?searchValue=n&sortingType=STAR"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].shopCount").value(1))
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].name").value("name"))
-                .andExpect(jsonPath("$[0].introduce").value("introduce"))
-                .andExpect(jsonPath("$[0].address").value("address"))
-                .andExpect(jsonPath("$[0].distance").value(372000))
-                .andExpect(jsonPath("$[0].star").value(5));
+                .andExpect(jsonPath("$.content.[0].id").value(1L))
+                .andExpect(jsonPath("$.content.[0].name").value("name"))
+                .andExpect(jsonPath("$.content.[0].introduce").value("introduce"))
+                .andExpect(jsonPath("$.content.[0].address").value("address"))
+                .andExpect(jsonPath("$.content.[0].distance").value(372000))
+                .andExpect(jsonPath("$.content.[0].star").value(5));
     }
 
     @Test
@@ -119,9 +96,9 @@ public class ShopControllerTest {
         //given
         given(shopService.getShopsByPartner(anyLong(), anyInt()))
                 .willReturn(
-                        new ArrayList<>(
-                                Arrays.asList(
-                                        ShopDto.ShopTopResponse.builder()
+                        new PageImpl<>(
+                                List.of(
+                                        ShopTopResponse.builder()
                                                 .id(1L)
                                                 .name("name")
                                                 .introduce("introduce")
@@ -135,11 +112,11 @@ public class ShopControllerTest {
         mockMvc.perform(get("/shop/partner/0"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].name").value("name"))
-                .andExpect(jsonPath("$[0].introduce").value("introduce"))
-                .andExpect(jsonPath("$[0].star").value(5))
-                .andExpect(jsonPath("$[0].address").value("address"));
+                .andExpect(jsonPath("$.content.[0].id").value(1L))
+                .andExpect(jsonPath("$.content.[0].name").value("name"))
+                .andExpect(jsonPath("$.content.[0].introduce").value("introduce"))
+                .andExpect(jsonPath("$.content.[0].star").value(5))
+                .andExpect(jsonPath("$.content.[0].address").value("address"));
     }
 
     @Test
